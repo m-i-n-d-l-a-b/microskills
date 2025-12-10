@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import { analyticsService, ANALYTICS_EVENTS, type UserTraits } from '@/services/analyticsService';
+import { getAnalyticsService, ANALYTICS_EVENTS, type UserTraits } from '@/services/analyticsService';
 import { useAuth } from './useAuth';
 
 export interface AnalyticsEvent {
@@ -10,6 +10,7 @@ export interface AnalyticsEvent {
 
 export const useAnalytics = () => {
   const { user, isAuthenticated } = useAuth();
+  const analyticsService = getAnalyticsService();
 
   // Initialize analytics service on mount
   useEffect(() => {

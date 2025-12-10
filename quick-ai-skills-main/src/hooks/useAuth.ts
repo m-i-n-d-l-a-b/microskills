@@ -184,7 +184,7 @@ export function useAuth(): UseAuthReturn {
       if (user) {
         const updatedUser = { ...user, preferences: updatedPreferences };
         queryClient.setQueryData(AUTH_QUERY_KEYS.user, updatedUser);
-        authManager.updateUser(updatedUser);
+        // User state is managed by supabaseAuthManager subscription, no manual update needed
       }
     },
     onError: (error: any) => {

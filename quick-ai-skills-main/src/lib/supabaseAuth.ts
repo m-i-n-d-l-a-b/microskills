@@ -71,12 +71,14 @@ export class SupabaseAuthManager {
   private async initialize(): Promise<void> {
     try {
       // Get initial session
-      const { data: { session }, error } = await supabase.auth.getSession();
+      const { data, error } = await supabase.auth.getSession();
       
       if (error) {
         this.updateState({ error: error.message, loading: false, isInitialized: true });
         return;
       }
+      
+      const session = data?.session || null;
 
       if (session) {
         const user = convertSupabaseUser(session.user);

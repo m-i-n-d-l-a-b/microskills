@@ -193,7 +193,7 @@ const Index = () => {
               </Badge>
               <h1 className="text-4xl lg:text-5xl font-bold text-foreground leading-tight">
                 Master AI Skills in
-                <span className="text-transparent bg-gradient-primary bg-clip-text"> 5 Minutes</span>
+                <span className="bg-gradient-primary bg-clip-text"> 5 Minutes</span>
               </h1>
               <p className="text-lg text-muted-foreground leading-relaxed">
                 Learn cutting-edge AI techniques through interactive micro-lessons. 

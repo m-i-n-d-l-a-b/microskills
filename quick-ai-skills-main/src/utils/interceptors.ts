@@ -1,5 +1,5 @@
 import { errorHandler } from './errorHandling';
-import { authManager } from '@/lib/auth';
+import { supabaseAuthManager } from '@/lib/supabaseAuth';
 import { ENV } from '@/lib/constants';
 import type { ApiResponse, ApiError } from '@/types/api';
 
@@ -467,8 +467,15 @@ class InterceptorManager {
     timeout?: number,
     retries?: number
   ): RequestConfig {
-    const currentUser = authManager.getCurrentUser();
-    const sessionData = authManager.getSessionData();
+    const currentUser = supabaseAuthManager.getCurrentUser();
+    const session = supabaseAuthManager.getState().session;
+    // Create session data compatible with old structure
+    const sessionData = session ? {
+      accessToken: session.access_token,
+      refreshToken: session.refresh_token,
+      expiresAt: session.expires_at || (Date.now() + (session.expires_in || 3600) * 1000),
+      lastActivity: new Date().toISOString(), // Use current time as last activity
+    } : null;
 
     return {
       url,
