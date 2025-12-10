@@ -77,28 +77,37 @@ describe('useSpacedRepetition', () => {
     },
   ];
 
-  const mocks = [
-    {
-      request: {
-        query: GET_SPACED_REPETITION_ITEMS,
-      },
-      result: {
-        data: {
-          spacedRepetitionItems: mockSpacedRepetitionItems,
+  // Helper to create multiple mocks for the same query (needed for refetches)
+  const createMocks = (count = 3) => {
+    const mocks = [];
+    for (let i = 0; i < count; i++) {
+      mocks.push(
+        {
+          request: {
+            query: GET_SPACED_REPETITION_ITEMS,
+          },
+          result: {
+            data: {
+              spacedRepetitionItems: mockSpacedRepetitionItems,
+            },
+          },
         },
-      },
-    },
-    {
-      request: {
-        query: GET_DUE_REVIEWS,
-      },
-      result: {
-        data: {
-          dueReviews: mockDueReviews,
-        },
-      },
-    },
-  ];
+        {
+          request: {
+            query: GET_DUE_REVIEWS,
+          },
+          result: {
+            data: {
+              dueReviews: mockDueReviews,
+            },
+          },
+        }
+      );
+    }
+    return mocks;
+  };
+
+  const mocks = createMocks(3);
 
   beforeEach(() => {
     mockUseAuth.mockReturnValue({
@@ -253,9 +262,12 @@ describe('useSpacedRepetition', () => {
       },
     };
 
+    // After update, items are refetched, so we need more mocks
+    const testMocks = [...createMocks(2), updateMock, ...createMocks(1)];
+
     const { result } = renderHook(() => useSpacedRepetition(), {
       wrapper: ({ children }) => (
-        <MockedProvider mocks={[...mocks, updateMock]} addTypename={false}>
+        <MockedProvider mocks={testMocks} addTypename={false}>
           {children}
         </MockedProvider>
       ),
@@ -302,9 +314,12 @@ describe('useSpacedRepetition', () => {
       },
     };
 
+    // After create, items are refetched, so we need more mocks
+    const testMocks = [...createMocks(2), createMock, ...createMocks(1)];
+
     const { result } = renderHook(() => useSpacedRepetition(), {
       wrapper: ({ children }) => (
-        <MockedProvider mocks={[...mocks, createMock]} addTypename={false}>
+        <MockedProvider mocks={testMocks} addTypename={false}>
           {children}
         </MockedProvider>
       ),
@@ -339,9 +354,12 @@ describe('useSpacedRepetition', () => {
       error: new Error('Update failed'),
     };
 
+    // Need initial mocks for loading, plus error mock
+    const testMocks = [...createMocks(2), errorMock];
+
     const { result } = renderHook(() => useSpacedRepetition(), {
       wrapper: ({ children }) => (
-        <MockedProvider mocks={[...mocks, errorMock]} addTypename={false}>
+        <MockedProvider mocks={testMocks} addTypename={false}>
           {children}
         </MockedProvider>
       ),
@@ -392,9 +410,12 @@ describe('useSpacedRepetition', () => {
   });
 
   it('should refresh items successfully', async () => {
+    // refreshItems triggers refetch, so we need extra mocks
+    const testMocks = createMocks(4);
+
     const { result } = renderHook(() => useSpacedRepetition(), {
       wrapper: ({ children }) => (
-        <MockedProvider mocks={mocks} addTypename={false}>
+        <MockedProvider mocks={testMocks} addTypename={false}>
           {children}
         </MockedProvider>
       ),

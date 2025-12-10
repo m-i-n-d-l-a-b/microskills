@@ -35,7 +35,7 @@ export class SessionManager {
     });
 
     // Set up automatic token refresh
-    this.setupAutoRefresh();
+    await this.setupAutoRefresh();
   }
 
   // Handle authentication state changes
@@ -57,8 +57,8 @@ export class SessionManager {
   }
 
   // Set up automatic token refresh
-  private setupAutoRefresh(): void {
-    const session = this.getCurrentSession();
+  private async setupAutoRefresh(): Promise<void> {
+    const session = await this.getCurrentSession();
     if (session) {
       this.scheduleRefresh(session);
     }
@@ -79,14 +79,32 @@ export class SessionManager {
       }, timeUntilRefresh);
     } else {
       // Token is already close to expiry, refresh immediately
-      this.refreshSession();
+      // Use void to explicitly mark as fire-and-forget, but handle errors
+      void this.refreshSession().catch((error) => {
+        console.error('Failed to refresh session immediately:', error);
+        // Session refresh failure is already handled in refreshSession method
+      });
     }
   }
 
   // Get current session from Supabase
   private async getCurrentSession(): Promise<SupabaseSession | null> {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session;
+    try {
+      const response = await supabase.auth.getSession();
+      if (!response) {
+        return null;
+      }
+      const { data, error } = response;
+      if (error) {
+        console.error('Failed to get session:', error);
+        return null;
+      }
+      const session = data?.session || null;
+      return session;
+    } catch (error) {
+      console.error('Error getting session:', error);
+      return null;
+    }
   }
 
   // Set session data

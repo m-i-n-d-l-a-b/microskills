@@ -9,7 +9,9 @@ import {
 } from 'firebase/messaging';
 import { ENV } from '@/lib/constants';
 import { handleError } from '@/utils/errorHandling';
-import { analyticsService } from './analyticsService';
+import { getAnalyticsService } from './analyticsService';
+
+const analytics = () => getAnalyticsService();
 import { emailService } from './emailService';
 
 // Notification types
@@ -188,9 +190,9 @@ export class NotificationService {
       const permission = await Notification.requestPermission();
       
       if (permission === 'granted') {
-        analyticsService.track('notification_permission_granted');
+        analytics().track('notification_permission_granted');
       } else {
-        analyticsService.track('notification_permission_denied');
+        analytics().track('notification_permission_denied');
       }
 
       return permission;
@@ -216,7 +218,7 @@ export class NotificationService {
       if (token) {
         // Store token for later use
         localStorage.setItem('fcm_token', token);
-        analyticsService.track('fcm_token_generated');
+        analytics().track('fcm_token_generated');
         return token;
       }
 
@@ -266,7 +268,7 @@ export class NotificationService {
       }
 
       fullNotification.status = 'sent';
-      analyticsService.track('notification_sent', {
+      analytics().track('notification_sent', {
         type: notification.type,
         channel: preferences.channels,
       });
@@ -526,7 +528,7 @@ export class NotificationService {
     this.markAsRead(notification.id);
 
     // Track analytics
-    analyticsService.track('notification_clicked', {
+    analytics().track('notification_clicked', {
       type: notification.type,
       notification_id: notification.id,
     });
@@ -547,7 +549,7 @@ export class NotificationService {
         break;
     }
 
-    analyticsService.track('notification_action', {
+    analytics().track('notification_action', {
       type: notification.type,
       action,
       notification_id: notification.id,
@@ -639,7 +641,7 @@ export class NotificationService {
 
       localStorage.setItem(`notification_preferences_${userId}`, JSON.stringify(updated));
 
-      analyticsService.track('notification_preferences_updated', {
+      analytics().track('notification_preferences_updated', {
         updates: Object.keys(updates),
       });
 

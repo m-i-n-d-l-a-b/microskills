@@ -52,7 +52,7 @@ export class AnalyticsService {
   }
 
   /**
-   * Get singleton instance
+   * Get singleton instance without triggering eager module evaluation
    */
   public static getInstance(): AnalyticsService {
     if (!AnalyticsService.instance) {
@@ -96,7 +96,7 @@ export class AnalyticsService {
         console.log('Analytics service initialized');
       }
     } catch (error) {
-      handleError(error, { action: 'initialize-analytics' });
+      handleError(error, { endpoint: 'analytics/initialize' });
       console.error('Failed to initialize analytics:', error);
     }
   }
@@ -142,7 +142,7 @@ export class AnalyticsService {
         console.log('User identified:', { userId, traits });
       }
     } catch (error) {
-      handleError(error, { action: 'identify-user' });
+      handleError(error, { endpoint: 'analytics/identify' });
     }
   }
 
@@ -161,7 +161,7 @@ export class AnalyticsService {
         console.log('User properties set:', properties);
       }
     } catch (error) {
-      handleError(error, { action: 'set-user-properties' });
+      handleError(error, { endpoint: 'analytics/set-user-properties' });
     }
   }
 
@@ -183,7 +183,7 @@ export class AnalyticsService {
         posthog.capture('$pageview', properties);
       }
     } catch (error) {
-      handleError(error, { action: 'track-pageview' });
+      handleError(error, { endpoint: 'analytics/track-pageview' });
     }
   }
 
@@ -325,7 +325,7 @@ export class AnalyticsService {
         console.log('Analytics event sent:', event);
       }
     } catch (error) {
-      handleError(error, { action: 'send-analytics-event' });
+      handleError(error, { endpoint: 'analytics/send-event' });
       
       // Fallback to localStorage for debugging
       this.storeEventLocally(event);
@@ -372,8 +372,14 @@ export class AnalyticsService {
   }
 }
 
-// Export singleton instance
-export const analyticsService = AnalyticsService.getInstance();
+// Lazy singleton accessor to avoid eager initialization during circular imports
+let analyticsServiceInstance: AnalyticsService | null = null;
+export const getAnalyticsService = (): AnalyticsService => {
+  if (!analyticsServiceInstance) {
+    analyticsServiceInstance = AnalyticsService.getInstance();
+  }
+  return analyticsServiceInstance;
+};
 
 // Common analytics events
 export const ANALYTICS_EVENTS = {

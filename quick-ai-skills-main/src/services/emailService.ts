@@ -1,6 +1,6 @@
 import { ENV } from '@/lib/constants';
 import { handleError } from '@/utils/errorHandling';
-import { analyticsService } from './analyticsService';
+import { getAnalyticsService } from './analyticsService';
 
 // Email types
 export type EmailType = 
@@ -146,7 +146,7 @@ export class EmailService {
       await this.sendEmailToProvider(fullEmail);
 
       fullEmail.status = 'sent';
-      analyticsService.track('email_sent', {
+      getAnalyticsService().track('email_sent', {
         type: email.type,
         provider: this.config.provider,
       });

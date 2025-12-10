@@ -453,6 +453,48 @@ describe('SessionManager', () => {
     });
   });
 
+  describe('Error Handling', () => {
+    it('should handle getSession error gracefully', async () => {
+      mockSupabase.auth.getSession.mockResolvedValueOnce({
+        data: { session: null },
+        error: { message: 'Failed to get session', status: 500 },
+      });
+
+      // The getCurrentSession is private, but we can test it indirectly
+      // by checking that setupAutoRefresh handles errors
+      const newManager = new SessionManager();
+      // Wait for initialization to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Should not throw and should handle error gracefully
+      expect(newManager).toBeDefined();
+      newManager.destroy();
+    });
+
+    it('should handle getSession with null data', async () => {
+      mockSupabase.auth.getSession.mockResolvedValueOnce({
+        data: { session: null },
+        error: null,
+      });
+
+      const newManager = new SessionManager();
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      expect(newManager).toBeDefined();
+      newManager.destroy();
+    });
+
+    it('should handle getSession returning undefined', async () => {
+      mockSupabase.auth.getSession.mockResolvedValueOnce(undefined as any);
+
+      const newManager = new SessionManager();
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      expect(newManager).toBeDefined();
+      newManager.destroy();
+    });
+  });
+
   describe('Cleanup', () => {
     it('should destroy session manager properly', () => {
       const listener = vi.fn();

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { AnalyticsService, analyticsService, ANALYTICS_EVENTS } from './analyticsService';
+import { AnalyticsService, getAnalyticsService, ANALYTICS_EVENTS } from './analyticsService';
 
 // Mock PostHog
 vi.mock('posthog-js', () => ({
@@ -366,6 +366,7 @@ describe('Analytics Events Constants', () => {
 
 describe('Analytics Service Singleton', () => {
   it('should export singleton instance', () => {
+    const analyticsService = getAnalyticsService();
     expect(analyticsService).toBeInstanceOf(AnalyticsService);
     expect(analyticsService).toBe(AnalyticsService.getInstance());
   });
