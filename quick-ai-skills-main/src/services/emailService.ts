@@ -1,515 +1,546 @@
-import { ENV } from '@/lib/constants';
-import { handleError } from '@/utils/errorHandling';
-import { getAnalyticsService } from './analyticsService';
+import { ENV } from "@/lib/constants";
+import { handleError } from "@/utils/errorHandling";
+import { getAnalyticsService } from "./analyticsService";
 
 // Email types
-export type EmailType = 
-  | 'welcome'
-  | 'lesson_reminder'
-  | 'achievement_unlocked'
-  | 'streak_achieved'
-  | 'project_graded'
-  | 'weekly_summary'
-  | 'monthly_report'
-  | 'password_reset'
-  | 'email_verification'
-  | 'system_alert';
+export type EmailType =
+	| "welcome"
+	| "lesson_reminder"
+	| "achievement_unlocked"
+	| "streak_achieved"
+	| "project_graded"
+	| "weekly_summary"
+	| "monthly_report"
+	| "password_reset"
+	| "email_verification"
+	| "system_alert";
 
 // Email priority
-export type EmailPriority = 'low' | 'normal' | 'high' | 'urgent';
+export type EmailPriority = "low" | "normal" | "high" | "urgent";
 
 // Email status
-export type EmailStatus = 'pending' | 'sent' | 'delivered' | 'failed' | 'bounced';
+export type EmailStatus =
+	| "pending"
+	| "sent"
+	| "delivered"
+	| "failed"
+	| "bounced";
 
 // Email template interface
 export interface EmailTemplate {
-  id: string;
-  type: EmailType;
-  subject: string;
-  htmlBody: string;
-  textBody: string;
-  variables: string[];
-  isActive: boolean;
+	id: string;
+	type: EmailType;
+	subject: string;
+	htmlBody: string;
+	textBody: string;
+	variables: string[];
+	isActive: boolean;
 }
 
 // Email interface
 export interface Email {
-  id: string;
-  type: EmailType;
-  to: string;
-  subject: string;
-  htmlBody: string;
-  textBody: string;
-  priority: EmailPriority;
-  status: EmailStatus;
-  userId: string;
-  scheduledAt?: string;
-  sentAt?: string;
-  deliveredAt?: string;
-  failedAt?: string;
-  errorMessage?: string;
-  metadata?: Record<string, any>;
+	id: string;
+	type: EmailType;
+	to: string;
+	subject: string;
+	htmlBody: string;
+	textBody: string;
+	priority: EmailPriority;
+	status: EmailStatus;
+	userId: string;
+	scheduledAt?: string;
+	sentAt?: string;
+	deliveredAt?: string;
+	failedAt?: string;
+	errorMessage?: string;
+	metadata?: Record<string, any>;
 }
 
 // Email service configuration
 export interface EmailConfig {
-  enabled: boolean;
-  provider: 'sendgrid' | 'mailgun' | 'aws-ses' | 'resend' | 'mock';
-  apiKey: string;
-  fromEmail: string;
-  fromName: string;
-  replyToEmail?: string;
-  maxRetries: number;
-  retryDelay: number;
-  batchSize: number;
-  rateLimit: number; // emails per minute
+	enabled: boolean;
+	provider: "sendgrid" | "mailgun" | "aws-ses" | "resend" | "mock";
+	apiKey: string;
+	fromEmail: string;
+	fromName: string;
+	replyToEmail?: string;
+	maxRetries: number;
+	retryDelay: number;
+	batchSize: number;
+	rateLimit: number; // emails per minute
 }
 
 // Email service class
 export class EmailService {
-  private static instance: EmailService;
-  private config: EmailConfig;
-  private isInitialized: boolean = false;
-  private emailQueue: Email[] = [];
-  private processingQueue: boolean = false;
-  private rateLimitCounter: number = 0;
-  private lastRateLimitReset: number = Date.now();
+	private static instance: EmailService;
+	private config: EmailConfig;
+	private isInitialized: boolean = false;
+	private emailQueue: Email[] = [];
+	private processingQueue: boolean = false;
+	private rateLimitCounter: number = 0;
+	private lastRateLimitReset: number = Date.now();
 
-  constructor() {
-    this.config = {
-      enabled: ENV.ENABLE_EMAIL_NOTIFICATIONS || false,
-      provider: (ENV.EMAIL_PROVIDER as EmailConfig['provider']) || 'mock',
-      apiKey: ENV.EMAIL_API_KEY || '',
-      fromEmail: ENV.EMAIL_FROM || 'noreply@aiskills.com',
-      fromName: ENV.EMAIL_FROM_NAME || 'AI Skills',
-      replyToEmail: ENV.EMAIL_REPLY_TO,
-      maxRetries: 3,
-      retryDelay: 5000, // 5 seconds
-      batchSize: 10,
-      rateLimit: 60, // 60 emails per minute
-    };
-  }
+	constructor() {
+		this.config = {
+			enabled: ENV.ENABLE_EMAIL_NOTIFICATIONS || false,
+			provider: (ENV.EMAIL_PROVIDER as EmailConfig["provider"]) || "mock",
+			apiKey: ENV.EMAIL_API_KEY || "",
+			fromEmail: ENV.EMAIL_FROM || "noreply@aiskills.com",
+			fromName: ENV.EMAIL_FROM_NAME || "AI Skills",
+			replyToEmail: ENV.EMAIL_REPLY_TO,
+			maxRetries: 3,
+			retryDelay: 5000, // 5 seconds
+			batchSize: 10,
+			rateLimit: 60, // 60 emails per minute
+		};
+	}
 
-  /**
-   * Get singleton instance
-   */
-  public static getInstance(): EmailService {
-    if (!EmailService.instance) {
-      EmailService.instance = new EmailService();
-    }
-    return EmailService.instance;
-  }
+	/**
+	 * Get singleton instance
+	 */
+	public static getInstance(): EmailService {
+		if (!EmailService.instance) {
+			EmailService.instance = new EmailService();
+		}
+		return EmailService.instance;
+	}
 
-  /**
-   * Initialize email service
-   */
-  public async initialize(): Promise<void> {
-    if (this.isInitialized || !this.config.enabled) {
-      return;
-    }
+	/**
+	 * Initialize email service
+	 */
+	public async initialize(): Promise<void> {
+		if (this.isInitialized || !this.config.enabled) {
+			return;
+		}
 
-    try {
-      // Validate configuration
-      this.validateConfig();
+		try {
+			// Validate configuration
+			this.validateConfig();
 
-      // Test connection
-      await this.testConnection();
+			// Test connection
+			await this.testConnection();
 
-      this.isInitialized = true;
+			this.isInitialized = true;
 
-      console.log('Email service initialized successfully');
-    } catch (error) {
-      handleError(error, { action: 'initialize-email-service' });
-      console.error('Failed to initialize email service:', error);
-    }
-  }
+			console.log("Email service initialized successfully");
+		} catch (error) {
+			handleError(error, { action: "initialize-email-service" });
+			console.error("Failed to initialize email service:", error);
+		}
+	}
 
-  /**
-   * Send email
-   */
-  public async sendEmail(email: Omit<Email, 'id' | 'status' | 'sentAt'>): Promise<Email> {
-    const fullEmail: Email = {
-      ...email,
-      id: this.generateId(),
-      status: 'pending',
-      sentAt: new Date().toISOString(),
-    };
+	/**
+	 * Send email
+	 */
+	public async sendEmail(
+		email: Omit<Email, "id" | "status" | "sentAt">,
+	): Promise<Email> {
+		const fullEmail: Email = {
+			...email,
+			id: this.generateId(),
+			status: "pending",
+			sentAt: new Date().toISOString(),
+		};
 
-    try {
-      // Check rate limit
-      if (!this.checkRateLimit()) {
-        this.emailQueue.push(fullEmail);
-        return fullEmail;
-      }
+		try {
+			// Check rate limit
+			if (!this.checkRateLimit()) {
+				this.emailQueue.push(fullEmail);
+				return fullEmail;
+			}
 
-      // Send email
-      await this.sendEmailToProvider(fullEmail);
+			// Send email
+			await this.sendEmailToProvider(fullEmail);
 
-      fullEmail.status = 'sent';
-      getAnalyticsService().track('email_sent', {
-        type: email.type,
-        provider: this.config.provider,
-      });
+			fullEmail.status = "sent";
+			getAnalyticsService().track("email_sent", {
+				type: email.type,
+				provider: this.config.provider,
+			});
 
-      return fullEmail;
-    } catch (error) {
-      handleError(error, { action: 'send-email' });
-      fullEmail.status = 'failed';
-      fullEmail.errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      return fullEmail;
-    }
-  }
+			return fullEmail;
+		} catch (error) {
+			handleError(error, { action: "send-email" });
+			fullEmail.status = "failed";
+			fullEmail.errorMessage =
+				error instanceof Error ? error.message : "Unknown error";
+			return fullEmail;
+		}
+	}
 
-  /**
-   * Schedule email
-   */
-  public async scheduleEmail(
-    email: Omit<Email, 'id' | 'status' | 'sentAt'>,
-    scheduledAt: string
-  ): Promise<Email> {
-    const scheduledEmail: Email = {
-      ...email,
-      id: this.generateId(),
-      status: 'pending',
-      scheduledAt,
-    };
+	/**
+	 * Schedule email
+	 */
+	public async scheduleEmail(
+		email: Omit<Email, "id" | "status" | "sentAt">,
+		scheduledAt: string,
+	): Promise<Email> {
+		const scheduledEmail: Email = {
+			...email,
+			id: this.generateId(),
+			status: "pending",
+			scheduledAt,
+		};
 
-    // Add to queue
-    this.emailQueue.push(scheduledEmail);
+		// Add to queue
+		this.emailQueue.push(scheduledEmail);
 
-    // Set up timer to send at scheduled time
-    const scheduledTime = new Date(scheduledAt).getTime();
-    const now = Date.now();
-    const delay = Math.max(0, scheduledTime - now);
+		// Set up timer to send at scheduled time
+		const scheduledTime = new Date(scheduledAt).getTime();
+		const now = Date.now();
+		const delay = Math.max(0, scheduledTime - now);
 
-    setTimeout(() => {
-      this.sendEmail(scheduledEmail);
-    }, delay);
+		setTimeout(() => {
+			this.sendEmail(scheduledEmail);
+		}, delay);
 
-    return scheduledEmail;
-  }
+		return scheduledEmail;
+	}
 
-  /**
-   * Send welcome email
-   */
-  public async sendWelcomeEmail(
-    to: string,
-    userId: string,
-    userName: string
-  ): Promise<Email> {
-    const template = this.getWelcomeTemplate(userName);
-    
-    return await this.sendEmail({
-      type: 'welcome',
-      to,
-      subject: template.subject,
-      htmlBody: template.htmlBody,
-      textBody: template.textBody,
-      priority: 'normal',
-      userId,
-      metadata: { userName },
-    });
-  }
+	/**
+	 * Send welcome email
+	 */
+	public async sendWelcomeEmail(
+		to: string,
+		userId: string,
+		userName: string,
+	): Promise<Email> {
+		const template = this.getWelcomeTemplate(userName);
 
-  /**
-   * Send lesson reminder email
-   */
-  public async sendLessonReminderEmail(
-    to: string,
-    userId: string,
-    lessonTitle: string,
-    streakCount: number
-  ): Promise<Email> {
-    const template = this.getLessonReminderTemplate(lessonTitle, streakCount);
-    
-    return await this.sendEmail({
-      type: 'lesson_reminder',
-      to,
-      subject: template.subject,
-      htmlBody: template.htmlBody,
-      textBody: template.textBody,
-      priority: 'normal',
-      userId,
-      metadata: { lessonTitle, streakCount },
-    });
-  }
+		return await this.sendEmail({
+			type: "welcome",
+			to,
+			subject: template.subject,
+			htmlBody: template.htmlBody,
+			textBody: template.textBody,
+			priority: "normal",
+			userId,
+			metadata: { userName },
+		});
+	}
 
-  /**
-   * Send achievement email
-   */
-  public async sendAchievementEmail(
-    to: string,
-    userId: string,
-    achievementName: string,
-    achievementDescription: string
-  ): Promise<Email> {
-    const template = this.getAchievementTemplate(achievementName, achievementDescription);
-    
-    return await this.sendEmail({
-      type: 'achievement_unlocked',
-      to,
-      subject: template.subject,
-      htmlBody: template.htmlBody,
-      textBody: template.textBody,
-      priority: 'high',
-      userId,
-      metadata: { achievementName, achievementDescription },
-    });
-  }
+	/**
+	 * Send lesson reminder email
+	 */
+	public async sendLessonReminderEmail(
+		to: string,
+		userId: string,
+		lessonTitle: string,
+		streakCount: number,
+	): Promise<Email> {
+		const template = this.getLessonReminderTemplate(lessonTitle, streakCount);
 
-  /**
-   * Send weekly summary email
-   */
-  public async sendWeeklySummaryEmail(
-    to: string,
-    userId: string,
-    summary: {
-      lessonsCompleted: number;
-      streakDays: number;
-      achievementsEarned: number;
-      totalTimeSpent: number;
-    }
-  ): Promise<Email> {
-    const template = this.getWeeklySummaryTemplate(summary);
-    
-    return await this.sendEmail({
-      type: 'weekly_summary',
-      to,
-      subject: template.subject,
-      htmlBody: template.htmlBody,
-      textBody: template.textBody,
-      priority: 'low',
-      userId,
-      metadata: summary,
-    });
-  }
+		return await this.sendEmail({
+			type: "lesson_reminder",
+			to,
+			subject: template.subject,
+			htmlBody: template.htmlBody,
+			textBody: template.textBody,
+			priority: "normal",
+			userId,
+			metadata: { lessonTitle, streakCount },
+		});
+	}
 
-  /**
-   * Process email queue
-   */
-  public async processQueue(): Promise<void> {
-    if (this.processingQueue || this.emailQueue.length === 0) {
-      return;
-    }
+	/**
+	 * Send achievement email
+	 */
+	public async sendAchievementEmail(
+		to: string,
+		userId: string,
+		achievementName: string,
+		achievementDescription: string,
+	): Promise<Email> {
+		const template = this.getAchievementTemplate(
+			achievementName,
+			achievementDescription,
+		);
 
-    this.processingQueue = true;
+		return await this.sendEmail({
+			type: "achievement_unlocked",
+			to,
+			subject: template.subject,
+			htmlBody: template.htmlBody,
+			textBody: template.textBody,
+			priority: "high",
+			userId,
+			metadata: { achievementName, achievementDescription },
+		});
+	}
 
-    try {
-      const batch = this.emailQueue.splice(0, this.config.batchSize);
-      
-      for (const email of batch) {
-        if (email.status === 'pending') {
-          await this.sendEmail(email);
-        }
-      }
-    } catch (error) {
-      handleError(error, { action: 'process-email-queue' });
-    } finally {
-      this.processingQueue = false;
-    }
-  }
+	/**
+	 * Send weekly summary email
+	 */
+	public async sendWeeklySummaryEmail(
+		to: string,
+		userId: string,
+		summary: {
+			lessonsCompleted: number;
+			streakDays: number;
+			achievementsEarned: number;
+			totalTimeSpent: number;
+		},
+	): Promise<Email> {
+		const template = this.getWeeklySummaryTemplate(summary);
 
-  /**
-   * Get email templates
-   */
-  public getEmailTemplates(): EmailTemplate[] {
-    return [
-      {
-        id: 'welcome',
-        type: 'welcome',
-        subject: 'Welcome to AI Skills! 🚀',
-        htmlBody: this.getWelcomeTemplate('{{userName}}').htmlBody,
-        textBody: this.getWelcomeTemplate('{{userName}}').textBody,
-        variables: ['userName'],
-        isActive: true,
-      },
-      {
-        id: 'lesson_reminder',
-        type: 'lesson_reminder',
-        subject: 'Time for your daily lesson! 📚',
-        htmlBody: this.getLessonReminderTemplate('{{lessonTitle}}', '{{streakCount}}').htmlBody,
-        textBody: this.getLessonReminderTemplate('{{lessonTitle}}', '{{streakCount}}').textBody,
-        variables: ['lessonTitle', 'streakCount'],
-        isActive: true,
-      },
-      {
-        id: 'achievement',
-        type: 'achievement_unlocked',
-        subject: '🎉 Achievement Unlocked!',
-        htmlBody: this.getAchievementTemplate('{{achievementName}}', '{{achievementDescription}}').htmlBody,
-        textBody: this.getAchievementTemplate('{{achievementName}}', '{{achievementDescription}}').textBody,
-        variables: ['achievementName', 'achievementDescription'],
-        isActive: true,
-      },
-      {
-        id: 'weekly_summary',
-        type: 'weekly_summary',
-        subject: 'Your Weekly Learning Summary 📊',
-        htmlBody: this.getWeeklySummaryTemplate({
-          lessonsCompleted: 0,
-          streakDays: 0,
-          achievementsEarned: 0,
-          totalTimeSpent: 0,
-        }).htmlBody,
-        textBody: this.getWeeklySummaryTemplate({
-          lessonsCompleted: 0,
-          streakDays: 0,
-          achievementsEarned: 0,
-          totalTimeSpent: 0,
-        }).textBody,
-        variables: ['lessonsCompleted', 'streakDays', 'achievementsEarned', 'totalTimeSpent'],
-        isActive: true,
-      },
-    ];
-  }
+		return await this.sendEmail({
+			type: "weekly_summary",
+			to,
+			subject: template.subject,
+			htmlBody: template.htmlBody,
+			textBody: template.textBody,
+			priority: "low",
+			userId,
+			metadata: summary,
+		});
+	}
 
-  /**
-   * Get service status
-   */
-  public getStatus(): {
-    isInitialized: boolean;
-    isEnabled: boolean;
-    queueLength: number;
-    processingQueue: boolean;
-    rateLimitRemaining: number;
-  } {
-    return {
-      isInitialized: this.isInitialized,
-      isEnabled: this.config.enabled,
-      queueLength: this.emailQueue.length,
-      processingQueue: this.processingQueue,
-      rateLimitRemaining: Math.max(0, this.config.rateLimit - this.rateLimitCounter),
-    };
-  }
+	/**
+	 * Process email queue
+	 */
+	public async processQueue(): Promise<void> {
+		if (this.processingQueue || this.emailQueue.length === 0) {
+			return;
+		}
 
-  /**
-   * Validate configuration
-   */
-  private validateConfig(): void {
-    if (!this.config.apiKey && this.config.provider !== 'mock') {
-      throw new Error('Email API key is required');
-    }
+		this.processingQueue = true;
 
-    if (!this.config.fromEmail) {
-      throw new Error('From email is required');
-    }
-  }
+		try {
+			const batch = this.emailQueue.splice(0, this.config.batchSize);
 
-  /**
-   * Test connection to email provider
-   */
-  private async testConnection(): Promise<void> {
-    if (this.config.provider === 'mock') {
-      return; // Mock provider doesn't need connection test
-    }
+			for (const email of batch) {
+				if (email.status === "pending") {
+					await this.sendEmail(email);
+				}
+			}
+		} catch (error) {
+			handleError(error, { action: "process-email-queue" });
+		} finally {
+			this.processingQueue = false;
+		}
+	}
 
-    // This would test the actual email provider connection
-    // For now, we'll just validate the config
-    console.log(`Testing connection to ${this.config.provider}...`);
-  }
+	/**
+	 * Get email templates
+	 */
+	public getEmailTemplates(): EmailTemplate[] {
+		return [
+			{
+				id: "welcome",
+				type: "welcome",
+				subject: "Welcome to AI Skills! 🚀",
+				htmlBody: this.getWelcomeTemplate("{{userName}}").htmlBody,
+				textBody: this.getWelcomeTemplate("{{userName}}").textBody,
+				variables: ["userName"],
+				isActive: true,
+			},
+			{
+				id: "lesson_reminder",
+				type: "lesson_reminder",
+				subject: "Time for your daily lesson! 📚",
+				htmlBody: this.getLessonReminderTemplate(
+					"{{lessonTitle}}",
+					"{{streakCount}}",
+				).htmlBody,
+				textBody: this.getLessonReminderTemplate(
+					"{{lessonTitle}}",
+					"{{streakCount}}",
+				).textBody,
+				variables: ["lessonTitle", "streakCount"],
+				isActive: true,
+			},
+			{
+				id: "achievement",
+				type: "achievement_unlocked",
+				subject: "🎉 Achievement Unlocked!",
+				htmlBody: this.getAchievementTemplate(
+					"{{achievementName}}",
+					"{{achievementDescription}}",
+				).htmlBody,
+				textBody: this.getAchievementTemplate(
+					"{{achievementName}}",
+					"{{achievementDescription}}",
+				).textBody,
+				variables: ["achievementName", "achievementDescription"],
+				isActive: true,
+			},
+			{
+				id: "weekly_summary",
+				type: "weekly_summary",
+				subject: "Your Weekly Learning Summary 📊",
+				htmlBody: this.getWeeklySummaryTemplate({
+					lessonsCompleted: 0,
+					streakDays: 0,
+					achievementsEarned: 0,
+					totalTimeSpent: 0,
+				}).htmlBody,
+				textBody: this.getWeeklySummaryTemplate({
+					lessonsCompleted: 0,
+					streakDays: 0,
+					achievementsEarned: 0,
+					totalTimeSpent: 0,
+				}).textBody,
+				variables: [
+					"lessonsCompleted",
+					"streakDays",
+					"achievementsEarned",
+					"totalTimeSpent",
+				],
+				isActive: true,
+			},
+		];
+	}
 
-  /**
-   * Send email to provider
-   */
-  private async sendEmailToProvider(email: Email): Promise<void> {
-    switch (this.config.provider) {
-      case 'mock':
-        await this.sendMockEmail(email);
-        break;
-      case 'sendgrid':
-        await this.sendSendGridEmail(email);
-        break;
-      case 'mailgun':
-        await this.sendMailgunEmail(email);
-        break;
-      case 'aws-ses':
-        await this.sendAWSSESEmail(email);
-        break;
-      case 'resend':
-        await this.sendResendEmail(email);
-        break;
-      default:
-        throw new Error(`Unsupported email provider: ${this.config.provider}`);
-    }
-  }
+	/**
+	 * Get service status
+	 */
+	public getStatus(): {
+		isInitialized: boolean;
+		isEnabled: boolean;
+		queueLength: number;
+		processingQueue: boolean;
+		rateLimitRemaining: number;
+	} {
+		return {
+			isInitialized: this.isInitialized,
+			isEnabled: this.config.enabled,
+			queueLength: this.emailQueue.length,
+			processingQueue: this.processingQueue,
+			rateLimitRemaining: Math.max(
+				0,
+				this.config.rateLimit - this.rateLimitCounter,
+			),
+		};
+	}
 
-  /**
-   * Send mock email (for development/testing)
-   */
-  private async sendMockEmail(email: Email): Promise<void> {
-    console.log('Mock email sent:', {
-      to: email.to,
-      subject: email.subject,
-      type: email.type,
-    });
+	/**
+	 * Validate configuration
+	 */
+	private validateConfig(): void {
+		if (!this.config.apiKey && this.config.provider !== "mock") {
+			throw new Error("Email API key is required");
+		}
 
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
+		if (!this.config.fromEmail) {
+			throw new Error("From email is required");
+		}
+	}
 
-  /**
-   * Send email via SendGrid
-   */
-  private async sendSendGridEmail(email: Email): Promise<void> {
-    // This would use the SendGrid API
-    // For now, we'll use mock
-    await this.sendMockEmail(email);
-  }
+	/**
+	 * Test connection to email provider
+	 */
+	private async testConnection(): Promise<void> {
+		if (this.config.provider === "mock") {
+			return; // Mock provider doesn't need connection test
+		}
 
-  /**
-   * Send email via Mailgun
-   */
-  private async sendMailgunEmail(email: Email): Promise<void> {
-    // This would use the Mailgun API
-    // For now, we'll use mock
-    await this.sendMockEmail(email);
-  }
+		// This would test the actual email provider connection
+		// For now, we'll just validate the config
+		console.log(`Testing connection to ${this.config.provider}...`);
+	}
 
-  /**
-   * Send email via AWS SES
-   */
-  private async sendAWSSESEmail(email: Email): Promise<void> {
-    // This would use the AWS SES API
-    // For now, we'll use mock
-    await this.sendMockEmail(email);
-  }
+	/**
+	 * Send email to provider
+	 */
+	private async sendEmailToProvider(email: Email): Promise<void> {
+		switch (this.config.provider) {
+			case "mock":
+				await this.sendMockEmail(email);
+				break;
+			case "sendgrid":
+				await this.sendSendGridEmail(email);
+				break;
+			case "mailgun":
+				await this.sendMailgunEmail(email);
+				break;
+			case "aws-ses":
+				await this.sendAWSSESEmail(email);
+				break;
+			case "resend":
+				await this.sendResendEmail(email);
+				break;
+			default:
+				throw new Error(`Unsupported email provider: ${this.config.provider}`);
+		}
+	}
 
-  /**
-   * Send email via Resend
-   */
-  private async sendResendEmail(email: Email): Promise<void> {
-    // This would use the Resend API
-    // For now, we'll use mock
-    await this.sendMockEmail(email);
-  }
+	/**
+	 * Send mock email (for development/testing)
+	 */
+	private async sendMockEmail(email: Email): Promise<void> {
+		console.log("Mock email sent:", {
+			to: email.to,
+			subject: email.subject,
+			type: email.type,
+		});
 
-  /**
-   * Check rate limit
-   */
-  private checkRateLimit(): boolean {
-    const now = Date.now();
-    
-    // Reset counter if a minute has passed
-    if (now - this.lastRateLimitReset >= 60000) {
-      this.rateLimitCounter = 0;
-      this.lastRateLimitReset = now;
-    }
+		// Simulate network delay
+		await new Promise((resolve) => setTimeout(resolve, 100));
+	}
 
-    if (this.rateLimitCounter >= this.config.rateLimit) {
-      return false;
-    }
+	/**
+	 * Send email via SendGrid
+	 */
+	private async sendSendGridEmail(email: Email): Promise<void> {
+		// This would use the SendGrid API
+		// For now, we'll use mock
+		await this.sendMockEmail(email);
+	}
 
-    this.rateLimitCounter++;
-    return true;
-  }
+	/**
+	 * Send email via Mailgun
+	 */
+	private async sendMailgunEmail(email: Email): Promise<void> {
+		// This would use the Mailgun API
+		// For now, we'll use mock
+		await this.sendMockEmail(email);
+	}
 
-  /**
-   * Get welcome email template
-   */
-  private getWelcomeTemplate(userName: string) {
-    return {
-      subject: `Welcome to AI Skills, ${userName}! 🚀`,
-      htmlBody: `
+	/**
+	 * Send email via AWS SES
+	 */
+	private async sendAWSSESEmail(email: Email): Promise<void> {
+		// This would use the AWS SES API
+		// For now, we'll use mock
+		await this.sendMockEmail(email);
+	}
+
+	/**
+	 * Send email via Resend
+	 */
+	private async sendResendEmail(email: Email): Promise<void> {
+		// This would use the Resend API
+		// For now, we'll use mock
+		await this.sendMockEmail(email);
+	}
+
+	/**
+	 * Check rate limit
+	 */
+	private checkRateLimit(): boolean {
+		const now = Date.now();
+
+		// Reset counter if a minute has passed
+		if (now - this.lastRateLimitReset >= 60000) {
+			this.rateLimitCounter = 0;
+			this.lastRateLimitReset = now;
+		}
+
+		if (this.rateLimitCounter >= this.config.rateLimit) {
+			return false;
+		}
+
+		this.rateLimitCounter++;
+		return true;
+	}
+
+	/**
+	 * Get welcome email template
+	 */
+	private getWelcomeTemplate(userName: string) {
+		return {
+			subject: `Welcome to AI Skills, ${userName}! 🚀`,
+			htmlBody: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #3B82F6;">Welcome to AI Skills!</h1>
           <p>Hi ${userName},</p>
@@ -524,7 +555,7 @@ export class EmailService {
           <p>The AI Skills Team</p>
         </div>
       `,
-      textBody: `
+			textBody: `
         Welcome to AI Skills, ${userName}!
         
         Welcome to your AI learning journey! We're excited to help you master the skills of the future.
@@ -538,16 +569,16 @@ export class EmailService {
         
         The AI Skills Team
       `,
-    };
-  }
+		};
+	}
 
-  /**
-   * Get lesson reminder template
-   */
-  private getLessonReminderTemplate(lessonTitle: string, streakCount: number) {
-    return {
-      subject: `Time for your daily lesson! 📚 (${streakCount} day streak)`,
-      htmlBody: `
+	/**
+	 * Get lesson reminder template
+	 */
+	private getLessonReminderTemplate(lessonTitle: string, streakCount: number) {
+		return {
+			subject: `Time for your daily lesson! 📚 (${streakCount} day streak)`,
+			htmlBody: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #3B82F6;">Ready for your daily lesson?</h1>
           <p>Don't break your ${streakCount}-day learning streak!</p>
@@ -557,7 +588,7 @@ export class EmailService {
           <p>Keep up the great work!</p>
         </div>
       `,
-      textBody: `
+			textBody: `
         Ready for your daily lesson?
         
         Don't break your ${streakCount}-day learning streak!
@@ -568,16 +599,19 @@ export class EmailService {
         
         Keep up the great work!
       `,
-    };
-  }
+		};
+	}
 
-  /**
-   * Get achievement template
-   */
-  private getAchievementTemplate(achievementName: string, achievementDescription: string) {
-    return {
-      subject: `🎉 Achievement Unlocked: ${achievementName}`,
-      htmlBody: `
+	/**
+	 * Get achievement template
+	 */
+	private getAchievementTemplate(
+		achievementName: string,
+		achievementDescription: string,
+	) {
+		return {
+			subject: `🎉 Achievement Unlocked: ${achievementName}`,
+			htmlBody: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #10B981;">🎉 Achievement Unlocked!</h1>
           <h2>${achievementName}</h2>
@@ -586,7 +620,7 @@ export class EmailService {
           <a href="${ENV.APP_URL}/achievements" style="background-color: #10B981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">View Achievements</a>
         </div>
       `,
-      textBody: `
+			textBody: `
         🎉 Achievement Unlocked!
         
         ${achievementName}
@@ -596,21 +630,21 @@ export class EmailService {
         
         View your achievements: ${ENV.APP_URL}/achievements
       `,
-    };
-  }
+		};
+	}
 
-  /**
-   * Get weekly summary template
-   */
-  private getWeeklySummaryTemplate(summary: {
-    lessonsCompleted: number;
-    streakDays: number;
-    achievementsEarned: number;
-    totalTimeSpent: number;
-  }) {
-    return {
-      subject: 'Your Weekly Learning Summary 📊',
-      htmlBody: `
+	/**
+	 * Get weekly summary template
+	 */
+	private getWeeklySummaryTemplate(summary: {
+		lessonsCompleted: number;
+		streakDays: number;
+		achievementsEarned: number;
+		totalTimeSpent: number;
+	}) {
+		return {
+			subject: "Your Weekly Learning Summary 📊",
+			htmlBody: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #3B82F6;">Weekly Learning Summary</h1>
           <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -626,7 +660,7 @@ export class EmailService {
           <a href="${ENV.APP_URL}/dashboard" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">View Dashboard</a>
         </div>
       `,
-      textBody: `
+			textBody: `
         Weekly Learning Summary
         
         This Week's Progress:
@@ -639,16 +673,16 @@ export class EmailService {
         
         View your dashboard: ${ENV.APP_URL}/dashboard
       `,
-    };
-  }
+		};
+	}
 
-  /**
-   * Generate unique ID
-   */
-  private generateId(): string {
-    return `email_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
+	/**
+	 * Generate unique ID
+	 */
+	private generateId(): string {
+		return `email_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+	}
 }
 
 // Export singleton instance
-export const emailService = EmailService.getInstance(); 
+export const emailService = EmailService.getInstance();

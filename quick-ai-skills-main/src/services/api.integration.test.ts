@@ -1,159 +1,162 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { api } from './api';
-import { setupServer } from 'msw/node';
-import { http, HttpResponse } from 'msw';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { api } from "./api";
+import { setupServer } from "msw/node";
+import { http, HttpResponse } from "msw";
 
 // Mock the monitoring service
-vi.mock('@/services/monitoringService', () => ({
-  reportError: vi.fn(),
-  addBreadcrumb: vi.fn(),
+vi.mock("@/services/monitoringService", () => ({
+	reportError: vi.fn(),
+	addBreadcrumb: vi.fn(),
 }));
 
 // Mock the auth utilities
-vi.mock('@/lib/auth', () => ({
-  getAuthToken: vi.fn(() => 'mock-token'),
-  refreshAuthToken: vi.fn(() => Promise.resolve('new-mock-token')),
+vi.mock("@/lib/auth", () => ({
+	getAuthToken: vi.fn(() => "mock-token"),
+	refreshAuthToken: vi.fn(() => Promise.resolve("new-mock-token")),
 }));
 
 // Create MSW server for API mocking
 const server = setupServer(
-  // GraphQL endpoint
-  http.post('/api/graphql', async ({ request }) => {
-    const body = await request.json();
-    
-    // Mock different GraphQL operations
-    if (body.query.includes('getDailyLesson')) {
-      return HttpResponse.json({
-        data: {
-          getDailyLesson: {
-            id: 'lesson-1',
-            title: 'Test Lesson',
-            content: 'Test content',
-            difficulty: 'beginner',
-            estimatedTime: 5,
-          },
-        },
-      });
-    }
-    
-    if (body.query.includes('submitQuiz')) {
-      return HttpResponse.json({
-        data: {
-          submitQuiz: {
-            success: true,
-            score: 85,
-            feedback: 'Great job!',
-            nextStep: 2,
-          },
-        },
-      });
-    }
-    
-    if (body.query.includes('submitProject')) {
-      return HttpResponse.json({
-        data: {
-          submitProject: {
-            success: true,
-            projectId: 'project-123',
-            status: 'submitted',
-            estimatedGradingTime: 30,
-          },
-        },
-      });
-    }
-    
-    if (body.query.includes('getUserProgress')) {
-      return HttpResponse.json({
-        data: {
-          getUserProgress: {
-            userId: 'user-123',
-            lessonsCompleted: 24,
-            totalXP: 2450,
-            currentLevel: 12,
-            streak: 7,
-          },
-        },
-      });
-    }
-    
-    // Default response
-    return HttpResponse.json({
-      data: null,
-      errors: [{ message: 'Unknown operation' }],
-    });
-  }),
-  
-  // REST API endpoints
-  http.get('/api/health', () => {
-    return HttpResponse.json({ status: 'ok', timestamp: new Date().toISOString() });
-  }),
-  
-  http.post('/api/auth/refresh', () => {
-    return HttpResponse.json({ 
-      accessToken: 'new-access-token',
-      refreshToken: 'new-refresh-token',
-    });
-  }),
-  
-  http.get('/api/user/profile', () => {
-    return HttpResponse.json({
-      id: 'user-123',
-      email: 'test@example.com',
-      name: 'Test User',
-      role: 'Developer',
-      preferences: {
-        notifications: true,
-        theme: 'dark',
-      },
-    });
-  }),
-  
-  http.put('/api/user/preferences', async ({ request }) => {
-    const body = await request.json();
-    return HttpResponse.json({
-      success: true,
-      preferences: body,
-    });
-  }),
-  
-  http.get('/api/leaderboard', () => {
-    return HttpResponse.json({
-      entries: [
-        { userId: 'user-1', name: 'User 1', xp: 3000, rank: 1 },
-        { userId: 'user-2', name: 'User 2', xp: 2800, rank: 2 },
-        { userId: 'user-3', name: 'User 3', xp: 2500, rank: 3 },
-      ],
-    });
-  }),
-  
-  http.post('/api/analytics/event', async ({ request }) => {
-    const body = await request.json();
-    return HttpResponse.json({
-      success: true,
-      eventId: 'event-123',
-      timestamp: new Date().toISOString(),
-    });
-  }),
+	// GraphQL endpoint
+	http.post("/api/graphql", async ({ request }) => {
+		const body = await request.json();
+
+		// Mock different GraphQL operations
+		if (body.query.includes("getDailyLesson")) {
+			return HttpResponse.json({
+				data: {
+					getDailyLesson: {
+						id: "lesson-1",
+						title: "Test Lesson",
+						content: "Test content",
+						difficulty: "beginner",
+						estimatedTime: 5,
+					},
+				},
+			});
+		}
+
+		if (body.query.includes("submitQuiz")) {
+			return HttpResponse.json({
+				data: {
+					submitQuiz: {
+						success: true,
+						score: 85,
+						feedback: "Great job!",
+						nextStep: 2,
+					},
+				},
+			});
+		}
+
+		if (body.query.includes("submitProject")) {
+			return HttpResponse.json({
+				data: {
+					submitProject: {
+						success: true,
+						projectId: "project-123",
+						status: "submitted",
+						estimatedGradingTime: 30,
+					},
+				},
+			});
+		}
+
+		if (body.query.includes("getUserProgress")) {
+			return HttpResponse.json({
+				data: {
+					getUserProgress: {
+						userId: "user-123",
+						lessonsCompleted: 24,
+						totalXP: 2450,
+						currentLevel: 12,
+						streak: 7,
+					},
+				},
+			});
+		}
+
+		// Default response
+		return HttpResponse.json({
+			data: null,
+			errors: [{ message: "Unknown operation" }],
+		});
+	}),
+
+	// REST API endpoints
+	http.get("/api/health", () => {
+		return HttpResponse.json({
+			status: "ok",
+			timestamp: new Date().toISOString(),
+		});
+	}),
+
+	http.post("/api/auth/refresh", () => {
+		return HttpResponse.json({
+			accessToken: "new-access-token",
+			refreshToken: "new-refresh-token",
+		});
+	}),
+
+	http.get("/api/user/profile", () => {
+		return HttpResponse.json({
+			id: "user-123",
+			email: "test@example.com",
+			name: "Test User",
+			role: "Developer",
+			preferences: {
+				notifications: true,
+				theme: "dark",
+			},
+		});
+	}),
+
+	http.put("/api/user/preferences", async ({ request }) => {
+		const body = await request.json();
+		return HttpResponse.json({
+			success: true,
+			preferences: body,
+		});
+	}),
+
+	http.get("/api/leaderboard", () => {
+		return HttpResponse.json({
+			entries: [
+				{ userId: "user-1", name: "User 1", xp: 3000, rank: 1 },
+				{ userId: "user-2", name: "User 2", xp: 2800, rank: 2 },
+				{ userId: "user-3", name: "User 3", xp: 2500, rank: 3 },
+			],
+		});
+	}),
+
+	http.post("/api/analytics/event", async ({ request }) => {
+		const body = await request.json();
+		return HttpResponse.json({
+			success: true,
+			eventId: "event-123",
+			timestamp: new Date().toISOString(),
+		});
+	}),
 );
 
-describe('API Integration Tests', () => {
-  beforeAll(() => {
-    server.listen();
-  });
+describe("API Integration Tests", () => {
+	beforeAll(() => {
+		server.listen();
+	});
 
-  afterEach(() => {
-    server.resetHandlers();
-    vi.clearAllMocks();
-  });
+	afterEach(() => {
+		server.resetHandlers();
+		vi.clearAllMocks();
+	});
 
-  afterAll(() => {
-    server.close();
-  });
+	afterAll(() => {
+		server.close();
+	});
 
-  describe('GraphQL Operations', () => {
-    it('fetches daily lesson successfully', async () => {
-      const result = await api.query({
-        query: `
+	describe("GraphQL Operations", () => {
+		it("fetches daily lesson successfully", async () => {
+			const result = await api.query({
+				query: `
           query GetDailyLesson {
             getDailyLesson {
               id
@@ -164,22 +167,22 @@ describe('API Integration Tests', () => {
             }
           }
         `,
-      });
+			});
 
-      expect(result.data).toBeDefined();
-      expect(result.data.getDailyLesson).toEqual({
-        id: 'lesson-1',
-        title: 'Test Lesson',
-        content: 'Test content',
-        difficulty: 'beginner',
-        estimatedTime: 5,
-      });
-      expect(result.errors).toBeUndefined();
-    });
+			expect(result.data).toBeDefined();
+			expect(result.data.getDailyLesson).toEqual({
+				id: "lesson-1",
+				title: "Test Lesson",
+				content: "Test content",
+				difficulty: "beginner",
+				estimatedTime: 5,
+			});
+			expect(result.errors).toBeUndefined();
+		});
 
-    it('submits quiz successfully', async () => {
-      const result = await api.mutate({
-        mutation: `
+		it("submits quiz successfully", async () => {
+			const result = await api.mutate({
+				mutation: `
           mutation SubmitQuiz($lessonId: ID!, $answers: [String!]!) {
             submitQuiz(lessonId: $lessonId, answers: $answers) {
               success
@@ -189,25 +192,25 @@ describe('API Integration Tests', () => {
             }
           }
         `,
-        variables: {
-          lessonId: 'lesson-1',
-          answers: ['answer1', 'answer2'],
-        },
-      });
+				variables: {
+					lessonId: "lesson-1",
+					answers: ["answer1", "answer2"],
+				},
+			});
 
-      expect(result.data).toBeDefined();
-      expect(result.data.submitQuiz).toEqual({
-        success: true,
-        score: 85,
-        feedback: 'Great job!',
-        nextStep: 2,
-      });
-      expect(result.errors).toBeUndefined();
-    });
+			expect(result.data).toBeDefined();
+			expect(result.data.submitQuiz).toEqual({
+				success: true,
+				score: 85,
+				feedback: "Great job!",
+				nextStep: 2,
+			});
+			expect(result.errors).toBeUndefined();
+		});
 
-    it('submits project successfully', async () => {
-      const result = await api.mutate({
-        mutation: `
+		it("submits project successfully", async () => {
+			const result = await api.mutate({
+				mutation: `
           mutation SubmitProject($projectData: ProjectInput!) {
             submitProject(projectData: $projectData) {
               success
@@ -217,29 +220,29 @@ describe('API Integration Tests', () => {
             }
           }
         `,
-        variables: {
-          projectData: {
-            title: 'Test Project',
-            description: 'A test project',
-            code: 'console.log("Hello World");',
-            language: 'javascript',
-          },
-        },
-      });
+				variables: {
+					projectData: {
+						title: "Test Project",
+						description: "A test project",
+						code: 'console.log("Hello World");',
+						language: "javascript",
+					},
+				},
+			});
 
-      expect(result.data).toBeDefined();
-      expect(result.data.submitProject).toEqual({
-        success: true,
-        projectId: 'project-123',
-        status: 'submitted',
-        estimatedGradingTime: 30,
-      });
-      expect(result.errors).toBeUndefined();
-    });
+			expect(result.data).toBeDefined();
+			expect(result.data.submitProject).toEqual({
+				success: true,
+				projectId: "project-123",
+				status: "submitted",
+				estimatedGradingTime: 30,
+			});
+			expect(result.errors).toBeUndefined();
+		});
 
-    it('fetches user progress successfully', async () => {
-      const result = await api.query({
-        query: `
+		it("fetches user progress successfully", async () => {
+			const result = await api.query({
+				query: `
           query GetUserProgress($userId: ID!) {
             getUserProgress(userId: $userId) {
               userId
@@ -250,36 +253,36 @@ describe('API Integration Tests', () => {
             }
           }
         `,
-        variables: {
-          userId: 'user-123',
-        },
-      });
+				variables: {
+					userId: "user-123",
+				},
+			});
 
-      expect(result.data).toBeDefined();
-      expect(result.data.getUserProgress).toEqual({
-        userId: 'user-123',
-        lessonsCompleted: 24,
-        totalXP: 2450,
-        currentLevel: 12,
-        streak: 7,
-      });
-      expect(result.errors).toBeUndefined();
-    });
+			expect(result.data).toBeDefined();
+			expect(result.data.getUserProgress).toEqual({
+				userId: "user-123",
+				lessonsCompleted: 24,
+				totalXP: 2450,
+				currentLevel: 12,
+				streak: 7,
+			});
+			expect(result.errors).toBeUndefined();
+		});
 
-    it('handles GraphQL errors gracefully', async () => {
-      server.use(
-        http.post('/api/graphql', () => {
-          return HttpResponse.json({
-            data: null,
-            errors: [
-              { message: 'Authentication required', code: 'UNAUTHENTICATED' },
-            ],
-          });
-        })
-      );
+		it("handles GraphQL errors gracefully", async () => {
+			server.use(
+				http.post("/api/graphql", () => {
+					return HttpResponse.json({
+						data: null,
+						errors: [
+							{ message: "Authentication required", code: "UNAUTHENTICATED" },
+						],
+					});
+				}),
+			);
 
-      const result = await api.query({
-        query: `
+			const result = await api.query({
+				query: `
           query GetDailyLesson {
             getDailyLesson {
               id
@@ -287,114 +290,114 @@ describe('API Integration Tests', () => {
             }
           }
         `,
-      });
+			});
 
-      expect(result.data).toBeNull();
-      expect(result.errors).toBeDefined();
-      expect(result.errors[0].message).toBe('Authentication required');
-    });
-  });
+			expect(result.data).toBeNull();
+			expect(result.errors).toBeDefined();
+			expect(result.errors[0].message).toBe("Authentication required");
+		});
+	});
 
-  describe('REST API Endpoints', () => {
-    it('checks health endpoint', async () => {
-      const response = await api.get('/health');
-      
-      expect(response.status).toBe(200);
-      expect(response.data).toEqual({
-        status: 'ok',
-        timestamp: expect.any(String),
-      });
-    });
+	describe("REST API Endpoints", () => {
+		it("checks health endpoint", async () => {
+			const response = await api.get("/health");
 
-    it('refreshes auth token', async () => {
-      const response = await api.post('/auth/refresh', {
-        refreshToken: 'old-refresh-token',
-      });
+			expect(response.status).toBe(200);
+			expect(response.data).toEqual({
+				status: "ok",
+				timestamp: expect.any(String),
+			});
+		});
 
-      expect(response.status).toBe(200);
-      expect(response.data).toEqual({
-        accessToken: 'new-access-token',
-        refreshToken: 'new-refresh-token',
-      });
-    });
+		it("refreshes auth token", async () => {
+			const response = await api.post("/auth/refresh", {
+				refreshToken: "old-refresh-token",
+			});
 
-    it('fetches user profile', async () => {
-      const response = await api.get('/user/profile');
+			expect(response.status).toBe(200);
+			expect(response.data).toEqual({
+				accessToken: "new-access-token",
+				refreshToken: "new-refresh-token",
+			});
+		});
 
-      expect(response.status).toBe(200);
-      expect(response.data).toEqual({
-        id: 'user-123',
-        email: 'test@example.com',
-        name: 'Test User',
-        role: 'Developer',
-        preferences: {
-          notifications: true,
-          theme: 'dark',
-        },
-      });
-    });
+		it("fetches user profile", async () => {
+			const response = await api.get("/user/profile");
 
-    it('updates user preferences', async () => {
-      const preferences = {
-        notifications: false,
-        theme: 'light',
-        language: 'en',
-      };
+			expect(response.status).toBe(200);
+			expect(response.data).toEqual({
+				id: "user-123",
+				email: "test@example.com",
+				name: "Test User",
+				role: "Developer",
+				preferences: {
+					notifications: true,
+					theme: "dark",
+				},
+			});
+		});
 
-      const response = await api.put('/user/preferences', preferences);
+		it("updates user preferences", async () => {
+			const preferences = {
+				notifications: false,
+				theme: "light",
+				language: "en",
+			};
 
-      expect(response.status).toBe(200);
-      expect(response.data).toEqual({
-        success: true,
-        preferences,
-      });
-    });
+			const response = await api.put("/user/preferences", preferences);
 
-    it('fetches leaderboard data', async () => {
-      const response = await api.get('/leaderboard');
+			expect(response.status).toBe(200);
+			expect(response.data).toEqual({
+				success: true,
+				preferences,
+			});
+		});
 
-      expect(response.status).toBe(200);
-      expect(response.data).toEqual({
-        entries: [
-          { userId: 'user-1', name: 'User 1', xp: 3000, rank: 1 },
-          { userId: 'user-2', name: 'User 2', xp: 2800, rank: 2 },
-          { userId: 'user-3', name: 'User 3', xp: 2500, rank: 3 },
-        ],
-      });
-    });
+		it("fetches leaderboard data", async () => {
+			const response = await api.get("/leaderboard");
 
-    it('tracks analytics events', async () => {
-      const eventData = {
-        event: 'lesson_completed',
-        properties: {
-          lessonId: 'lesson-1',
-          score: 85,
-          timeSpent: 300,
-        },
-      };
+			expect(response.status).toBe(200);
+			expect(response.data).toEqual({
+				entries: [
+					{ userId: "user-1", name: "User 1", xp: 3000, rank: 1 },
+					{ userId: "user-2", name: "User 2", xp: 2800, rank: 2 },
+					{ userId: "user-3", name: "User 3", xp: 2500, rank: 3 },
+				],
+			});
+		});
 
-      const response = await api.post('/analytics/event', eventData);
+		it("tracks analytics events", async () => {
+			const eventData = {
+				event: "lesson_completed",
+				properties: {
+					lessonId: "lesson-1",
+					score: 85,
+					timeSpent: 300,
+				},
+			};
 
-      expect(response.status).toBe(200);
-      expect(response.data).toEqual({
-        success: true,
-        eventId: 'event-123',
-        timestamp: expect.any(String),
-      });
-    });
-  });
+			const response = await api.post("/analytics/event", eventData);
 
-  describe('Error Handling', () => {
-    it('handles network errors', async () => {
-      server.use(
-        http.post('/api/graphql', () => {
-          return HttpResponse.error();
-        })
-      );
+			expect(response.status).toBe(200);
+			expect(response.data).toEqual({
+				success: true,
+				eventId: "event-123",
+				timestamp: expect.any(String),
+			});
+		});
+	});
 
-      await expect(
-        api.query({
-          query: `
+	describe("Error Handling", () => {
+		it("handles network errors", async () => {
+			server.use(
+				http.post("/api/graphql", () => {
+					return HttpResponse.error();
+				}),
+			);
+
+			await expect(
+				api.query({
+					query: `
             query GetDailyLesson {
               getDailyLesson {
                 id
@@ -402,30 +405,30 @@ describe('API Integration Tests', () => {
               }
             }
           `,
-        })
-      ).rejects.toThrow();
-    });
+				}),
+			).rejects.toThrow();
+		});
 
-    it('handles 404 errors', async () => {
-      server.use(
-        http.get('/api/nonexistent', () => {
-          return new HttpResponse(null, { status: 404 });
-        })
-      );
+		it("handles 404 errors", async () => {
+			server.use(
+				http.get("/api/nonexistent", () => {
+					return new HttpResponse(null, { status: 404 });
+				}),
+			);
 
-      await expect(api.get('/nonexistent')).rejects.toThrow();
-    });
+			await expect(api.get("/nonexistent")).rejects.toThrow();
+		});
 
-    it('handles 500 server errors', async () => {
-      server.use(
-        http.post('/api/graphql', () => {
-          return new HttpResponse(null, { status: 500 });
-        })
-      );
+		it("handles 500 server errors", async () => {
+			server.use(
+				http.post("/api/graphql", () => {
+					return new HttpResponse(null, { status: 500 });
+				}),
+			);
 
-      await expect(
-        api.query({
-          query: `
+			await expect(
+				api.query({
+					query: `
             query GetDailyLesson {
               getDailyLesson {
                 id
@@ -433,20 +436,20 @@ describe('API Integration Tests', () => {
               }
             }
           `,
-        })
-      ).rejects.toThrow();
-    });
+				}),
+			).rejects.toThrow();
+		});
 
-    it('handles authentication errors', async () => {
-      server.use(
-        http.post('/api/graphql', () => {
-          return new HttpResponse(null, { status: 401 });
-        })
-      );
+		it("handles authentication errors", async () => {
+			server.use(
+				http.post("/api/graphql", () => {
+					return new HttpResponse(null, { status: 401 });
+				}),
+			);
 
-      await expect(
-        api.query({
-          query: `
+			await expect(
+				api.query({
+					query: `
             query GetDailyLesson {
               getDailyLesson {
                 id
@@ -454,20 +457,20 @@ describe('API Integration Tests', () => {
               }
             }
           `,
-        })
-      ).rejects.toThrow();
-    });
+				}),
+			).rejects.toThrow();
+		});
 
-    it('handles rate limiting', async () => {
-      server.use(
-        http.post('/api/graphql', () => {
-          return new HttpResponse(null, { status: 429 });
-        })
-      );
+		it("handles rate limiting", async () => {
+			server.use(
+				http.post("/api/graphql", () => {
+					return new HttpResponse(null, { status: 429 });
+				}),
+			);
 
-      await expect(
-        api.query({
-          query: `
+			await expect(
+				api.query({
+					query: `
             query GetDailyLesson {
               getDailyLesson {
                 id
@@ -475,42 +478,42 @@ describe('API Integration Tests', () => {
               }
             }
           `,
-        })
-      ).rejects.toThrow();
-    });
-  });
+				}),
+			).rejects.toThrow();
+		});
+	});
 
-  describe('Request/Response Interceptors', () => {
-    it('adds auth token to requests', async () => {
-      const { getAuthToken } = await import('@/lib/auth');
-      
-      await api.get('/user/profile');
-      
-      expect(getAuthToken).toHaveBeenCalled();
-    });
+	describe("Request/Response Interceptors", () => {
+		it("adds auth token to requests", async () => {
+			const { getAuthToken } = await import("@/lib/auth");
 
-    it('handles token refresh on 401', async () => {
-      const { refreshAuthToken } = await import('@/lib/auth');
-      
-      server.use(
-        http.post('/api/graphql', ({ request }) => {
-          const authHeader = request.headers.get('authorization');
-          if (authHeader === 'Bearer mock-token') {
-            return new HttpResponse(null, { status: 401 });
-          }
-          return HttpResponse.json({
-            data: {
-              getDailyLesson: {
-                id: 'lesson-1',
-                title: 'Test Lesson',
-              },
-            },
-          });
-        })
-      );
+			await api.get("/user/profile");
 
-      await api.query({
-        query: `
+			expect(getAuthToken).toHaveBeenCalled();
+		});
+
+		it("handles token refresh on 401", async () => {
+			const { refreshAuthToken } = await import("@/lib/auth");
+
+			server.use(
+				http.post("/api/graphql", ({ request }) => {
+					const authHeader = request.headers.get("authorization");
+					if (authHeader === "Bearer mock-token") {
+						return new HttpResponse(null, { status: 401 });
+					}
+					return HttpResponse.json({
+						data: {
+							getDailyLesson: {
+								id: "lesson-1",
+								title: "Test Lesson",
+							},
+						},
+					});
+				}),
+			);
+
+			await api.query({
+				query: `
           query GetDailyLesson {
             getDailyLesson {
               id
@@ -518,39 +521,39 @@ describe('API Integration Tests', () => {
             }
           }
         `,
-      });
+			});
 
-      expect(refreshAuthToken).toHaveBeenCalled();
-    });
+			expect(refreshAuthToken).toHaveBeenCalled();
+		});
 
-    it('adds breadcrumbs for requests', async () => {
-      const { addBreadcrumb } = await import('@/services/monitoringService');
-      
-      await api.get('/user/profile');
-      
-      expect(addBreadcrumb).toHaveBeenCalledWith({
-        message: 'API Request',
-        category: 'api',
-        data: {
-          method: 'GET',
-          url: '/user/profile',
-          status: 200,
-        },
-      });
-    });
+		it("adds breadcrumbs for requests", async () => {
+			const { addBreadcrumb } = await import("@/services/monitoringService");
 
-    it('reports errors to monitoring service', async () => {
-      const { reportError } = await import('@/services/monitoringService');
-      
-      server.use(
-        http.post('/api/graphql', () => {
-          return new HttpResponse(null, { status: 500 });
-        })
-      );
+			await api.get("/user/profile");
 
-      try {
-        await api.query({
-          query: `
+			expect(addBreadcrumb).toHaveBeenCalledWith({
+				message: "API Request",
+				category: "api",
+				data: {
+					method: "GET",
+					url: "/user/profile",
+					status: 200,
+				},
+			});
+		});
+
+		it("reports errors to monitoring service", async () => {
+			const { reportError } = await import("@/services/monitoringService");
+
+			server.use(
+				http.post("/api/graphql", () => {
+					return new HttpResponse(null, { status: 500 });
+				}),
+			);
+
+			try {
+				await api.query({
+					query: `
             query GetDailyLesson {
               getDailyLesson {
                 id
@@ -558,34 +561,34 @@ describe('API Integration Tests', () => {
               }
             }
           `,
-        });
-      } catch (error) {
-        // Expected to throw
-      }
+				});
+			} catch (error) {
+				// Expected to throw
+			}
 
-      expect(reportError).toHaveBeenCalled();
-    });
-  });
+			expect(reportError).toHaveBeenCalled();
+		});
+	});
 
-  describe('Performance and Timeouts', () => {
-    it('handles slow responses', async () => {
-      server.use(
-        http.post('/api/graphql', async () => {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          return HttpResponse.json({
-            data: {
-              getDailyLesson: {
-                id: 'lesson-1',
-                title: 'Slow Response',
-              },
-            },
-          });
-        })
-      );
+	describe("Performance and Timeouts", () => {
+		it("handles slow responses", async () => {
+			server.use(
+				http.post("/api/graphql", async () => {
+					await new Promise((resolve) => setTimeout(resolve, 100));
+					return HttpResponse.json({
+						data: {
+							getDailyLesson: {
+								id: "lesson-1",
+								title: "Slow Response",
+							},
+						},
+					});
+				}),
+			);
 
-      const startTime = Date.now();
-      const result = await api.query({
-        query: `
+			const startTime = Date.now();
+			const result = await api.query({
+				query: `
           query GetDailyLesson {
             getDailyLesson {
               id
@@ -593,24 +596,24 @@ describe('API Integration Tests', () => {
             }
           }
         `,
-      });
-      const endTime = Date.now();
+			});
+			const endTime = Date.now();
 
-      expect(result.data).toBeDefined();
-      expect(endTime - startTime).toBeGreaterThan(100);
-    });
+			expect(result.data).toBeDefined();
+			expect(endTime - startTime).toBeGreaterThan(100);
+		});
 
-    it('handles request timeouts', async () => {
-      server.use(
-        http.post('/api/graphql', async () => {
-          await new Promise(resolve => setTimeout(resolve, 10000));
-          return HttpResponse.json({ data: null });
-        })
-      );
+		it("handles request timeouts", async () => {
+			server.use(
+				http.post("/api/graphql", async () => {
+					await new Promise((resolve) => setTimeout(resolve, 10000));
+					return HttpResponse.json({ data: null });
+				}),
+			);
 
-      await expect(
-        api.query({
-          query: `
+			await expect(
+				api.query({
+					query: `
             query GetDailyLesson {
               getDailyLesson {
                 id
@@ -618,28 +621,28 @@ describe('API Integration Tests', () => {
               }
             }
           `,
-        })
-      ).rejects.toThrow();
-    });
-  });
+				}),
+			).rejects.toThrow();
+		});
+	});
 
-  describe('Data Validation', () => {
-    it('validates GraphQL response structure', async () => {
-      server.use(
-        http.post('/api/graphql', () => {
-          return HttpResponse.json({
-            data: {
-              getDailyLesson: {
-                id: 'lesson-1',
-                // Missing required fields
-              },
-            },
-          });
-        })
-      );
+	describe("Data Validation", () => {
+		it("validates GraphQL response structure", async () => {
+			server.use(
+				http.post("/api/graphql", () => {
+					return HttpResponse.json({
+						data: {
+							getDailyLesson: {
+								id: "lesson-1",
+								// Missing required fields
+							},
+						},
+					});
+				}),
+			);
 
-      const result = await api.query({
-        query: `
+			const result = await api.query({
+				query: `
           query GetDailyLesson {
             getDailyLesson {
               id
@@ -648,24 +651,24 @@ describe('API Integration Tests', () => {
             }
           }
         `,
-      });
+			});
 
-      expect(result.data.getDailyLesson.title).toBeUndefined();
-      expect(result.data.getDailyLesson.content).toBeUndefined();
-    });
+			expect(result.data.getDailyLesson.title).toBeUndefined();
+			expect(result.data.getDailyLesson.content).toBeUndefined();
+		});
 
-    it('handles malformed JSON responses', async () => {
-      server.use(
-        http.post('/api/graphql', () => {
-          return new HttpResponse('Invalid JSON', {
-            headers: { 'content-type': 'application/json' },
-          });
-        })
-      );
+		it("handles malformed JSON responses", async () => {
+			server.use(
+				http.post("/api/graphql", () => {
+					return new HttpResponse("Invalid JSON", {
+						headers: { "content-type": "application/json" },
+					});
+				}),
+			);
 
-      await expect(
-        api.query({
-          query: `
+			await expect(
+				api.query({
+					query: `
             query GetDailyLesson {
               getDailyLesson {
                 id
@@ -673,16 +676,16 @@ describe('API Integration Tests', () => {
               }
             }
           `,
-        })
-      ).rejects.toThrow();
-    });
-  });
+				}),
+			).rejects.toThrow();
+		});
+	});
 
-  describe('Concurrent Requests', () => {
-    it('handles multiple concurrent GraphQL requests', async () => {
-      const promises = [
-        api.query({
-          query: `
+	describe("Concurrent Requests", () => {
+		it("handles multiple concurrent GraphQL requests", async () => {
+			const promises = [
+				api.query({
+					query: `
             query GetDailyLesson {
               getDailyLesson {
                 id
@@ -690,9 +693,9 @@ describe('API Integration Tests', () => {
               }
             }
           `,
-        }),
-        api.query({
-          query: `
+				}),
+				api.query({
+					query: `
             query GetUserProgress($userId: ID!) {
               getUserProgress(userId: $userId) {
                 userId
@@ -700,10 +703,10 @@ describe('API Integration Tests', () => {
               }
             }
           `,
-          variables: { userId: 'user-123' },
-        }),
-        api.mutate({
-          mutation: `
+					variables: { userId: "user-123" },
+				}),
+				api.mutate({
+					mutation: `
             mutation SubmitQuiz($lessonId: ID!, $answers: [String!]!) {
               submitQuiz(lessonId: $lessonId, answers: $answers) {
                 success
@@ -711,34 +714,34 @@ describe('API Integration Tests', () => {
               }
             }
           `,
-          variables: {
-            lessonId: 'lesson-1',
-            answers: ['answer1'],
-          },
-        }),
-      ];
+					variables: {
+						lessonId: "lesson-1",
+						answers: ["answer1"],
+					},
+				}),
+			];
 
-      const results = await Promise.all(promises);
+			const results = await Promise.all(promises);
 
-      expect(results).toHaveLength(3);
-      expect(results[0].data.getDailyLesson).toBeDefined();
-      expect(results[1].data.getUserProgress).toBeDefined();
-      expect(results[2].data.submitQuiz).toBeDefined();
-    });
+			expect(results).toHaveLength(3);
+			expect(results[0].data.getDailyLesson).toBeDefined();
+			expect(results[1].data.getUserProgress).toBeDefined();
+			expect(results[2].data.submitQuiz).toBeDefined();
+		});
 
-    it('handles concurrent REST API requests', async () => {
-      const promises = [
-        api.get('/health'),
-        api.get('/user/profile'),
-        api.get('/leaderboard'),
-      ];
+		it("handles concurrent REST API requests", async () => {
+			const promises = [
+				api.get("/health"),
+				api.get("/user/profile"),
+				api.get("/leaderboard"),
+			];
 
-      const results = await Promise.all(promises);
+			const results = await Promise.all(promises);
 
-      expect(results).toHaveLength(3);
-      expect(results[0].data.status).toBe('ok');
-      expect(results[1].data.id).toBe('user-123');
-      expect(results[2].data.entries).toBeDefined();
-    });
-  });
-}); 
+			expect(results).toHaveLength(3);
+			expect(results[0].data.status).toBe("ok");
+			expect(results[1].data.id).toBe("user-123");
+			expect(results[2].data.entries).toBeDefined();
+		});
+	});
+});
