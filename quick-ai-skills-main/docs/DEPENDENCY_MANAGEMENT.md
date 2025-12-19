@@ -40,7 +40,7 @@ This document outlines the comprehensive dependency management strategy for the 
     "vite": "^4.5.0",
     "vitest": "^0.34.0",
     "cypress": "^13.6.0",
-    "eslint": "^8.55.0",
+    "@biomejs/biome": "^2.3.8",
     "@types/react": "^18.2.0"
   }
 }
@@ -946,21 +946,22 @@ jobs:
 ```
 
 #### Security Best Practices
-```javascript
-// .eslintrc.js
-module.exports = {
-  rules: {
-    // Prevent use of eval and other dangerous functions
-    'no-eval': 'error',
-    'no-implied-eval': 'error',
-    
-    // Prevent prototype pollution
-    'no-proto': 'error',
-    
-    // Prevent use of dangerous globals
-    'no-global-assign': 'error'
+```json
+{
+  "$schema": "https://biomejs.dev/schemas/2.3.8/schema.json",
+  "linter": {
+    "rules": {
+      "recommended": false,
+      "suspicious": {
+        "noUnsafeFinally": "error",
+        "noUnsafeOptionalChaining": "error"
+      }
+    }
+  },
+  "files": {
+    "includes": ["**/*", "!dist", "!coverage", "!node_modules"]
   }
-};
+}
 ```
 
 #### Update Frequency Guidelines
