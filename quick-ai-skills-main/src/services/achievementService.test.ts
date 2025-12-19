@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { AchievementService } from "./achievementService";
 import { client } from "@/lib/graphql";
-import { Achievement } from "@/types/api";
+import type { Achievement } from "@/types/api";
 
 // Mock the GraphQL client
 vi.mock("@/lib/graphql", () => ({

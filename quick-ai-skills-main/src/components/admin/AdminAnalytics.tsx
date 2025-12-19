@@ -26,6 +26,7 @@ import {
 	Bell,
 	Mail,
 	Activity,
+	Target,
 } from "lucide-react";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -244,7 +245,7 @@ export const AdminAnalytics = () => {
 	}, []);
 
 	const processAnalyticsEvents = useCallback(
-		(events: AnalyticsEvent[], timeRange: string): Partial<AnalyticsData> => {
+		(events: AnalyticsEvent[], timeRange: string): Omit<AnalyticsData, "notificationStats"> => {
 			const now = new Date();
 			const timeRangeMs = getTimeRangeMs(timeRange);
 			const filteredEvents = events.filter((event) => {
@@ -291,12 +292,7 @@ export const AdminAnalytics = () => {
 				],
 			};
 		},
-		[
-			timeRange,
-			getTimeRangeMs,
-			generateUserEngagementData,
-			generateTopTracksData,
-		],
+		[getTimeRangeMs, generateUserEngagementData, generateTopTracksData],
 	);
 
 	const fetchAnalyticsData = useCallback(async () => {
@@ -334,7 +330,7 @@ export const AdminAnalytics = () => {
 					clickRate: calculateClickRate(analyticsEvents),
 				},
 				overview: {
-					...processedData.overview,
+					...(processedData.overview || defaultAnalytics.overview),
 					totalUsers: analyticsStatus.isInitialized ? 1 : 0, // In real app, this would be from user database
 					activeUsers: analyticsStatus.isEnabled ? 1 : 0,
 				},

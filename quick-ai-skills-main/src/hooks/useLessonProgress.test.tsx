@@ -1,6 +1,6 @@
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { MockedProvider } from "@apollo/client/testing";
-import React from "react";
+import type React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useLessonProgress } from "./useLessonProgress";
 import {

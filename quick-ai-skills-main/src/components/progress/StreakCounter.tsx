@@ -68,7 +68,11 @@ export const StreakCounter = ({
 						<div className="flex justify-center gap-1">
 							{Array.from({ length: Math.min(streak, 7) }, (_, i) => (
 								<div
-									key={i}
+									key={
+										lastActive
+											? `${lastActive.getTime()}-${i}`
+											: `streak-${streak}-${i}`
+									}
 									className="w-2 h-2 rounded-full bg-gradient-primary animate-scale-in"
 									style={{ animationDelay: `${i * 0.1}s` }}
 								/>

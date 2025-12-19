@@ -299,7 +299,7 @@ export class AuthManager {
 
 			if (retryCount < this.options.maxRetries) {
 				// Retry with exponential backoff
-				await this.delay(this.options.retryDelay * Math.pow(2, retryCount));
+				await this.delay(this.options.retryDelay * 2 ** retryCount);
 				return this.performTokenRefresh(tokenData, retryCount + 1);
 			} else {
 				// Max retries reached, clear auth data

@@ -1,4 +1,5 @@
-import React, { Component, ErrorInfo, ReactNode } from "react";
+import type React from "react";
+import { Component, type ErrorInfo, type ReactNode } from "react";
 import {
 	AlertTriangle,
 	RefreshCw,
@@ -615,7 +616,7 @@ export function useErrorBoundary(
 }
 
 // Error Boundary Provider for Context-based Error Handling
-import { createContext, useContext, ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 
 interface ErrorBoundaryContextType {
 	reportError: (error: Error, errorInfo: ErrorInfo) => void;
@@ -727,7 +728,7 @@ export const ErrorRecoveryUtils = {
 
 	// Calculate retry delay with exponential backoff
 	getRetryDelay: (attempt: number, baseDelay: number = 1000): number => {
-		return Math.min(baseDelay * Math.pow(2, attempt), 30000); // Max 30 seconds
+		return Math.min(baseDelay * 2 ** attempt, 30000); // Max 30 seconds
 	},
 
 	// Check if error should be reported

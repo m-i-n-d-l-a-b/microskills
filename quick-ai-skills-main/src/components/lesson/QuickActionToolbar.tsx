@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Palette, Volume2, Lightbulb, RefreshCw } from "lucide-react";
+import { Palette, Lightbulb, RefreshCw } from "lucide-react";
 import { useState } from "react";
 
 interface QuickActionToolbarProps {

@@ -1,4 +1,4 @@
-import { VALIDATION_RULES, ERROR_MESSAGES } from "../lib/constants";
+import { VALIDATION_RULES } from "../lib/constants";
 
 // Validation error type
 export interface ValidationError {
@@ -32,7 +32,7 @@ export function sanitizeInput(input: any, options: SanitizeOptions = {}): any {
 		removeHtml = true,
 		maxLength,
 		allowedTags = [],
-		allowedAttributes = [],
+		allowedAttributes: _allowedAttributes = [],
 	} = options;
 
 	if (input === null || input === undefined) {
@@ -53,7 +53,7 @@ export function sanitizeInput(input: any, options: SanitizeOptions = {}): any {
 		} else if (removeHtml && allowedTags.length > 0) {
 			// Allow only specific HTML tags
 			const allowedTagsRegex = new RegExp(
-				`<(?!\/?(?:${allowedTags.join("|")})\b)[^>]+>`,
+				`<(?!/?(?:${allowedTags.join("|")})\b)[^>]+>`,
 				"gi",
 			);
 			sanitized = sanitized.replace(allowedTagsRegex, "");
@@ -549,7 +549,7 @@ export function validateUserPreferences(data: any): ValidationResult {
  */
 export function validateGraphQLVariables(
 	variables: any,
-	schema: any,
+	_schema: any,
 ): ValidationResult {
 	const errors: ValidationError[] = [];
 	const sanitizedVariables: any = {};
@@ -611,7 +611,7 @@ export function validateFileUpload(
 			"text/css",
 			"text/markdown",
 		],
-		maxFiles = 10,
+		maxFiles: _maxFiles = 10,
 	} = options;
 
 	if (!file) {

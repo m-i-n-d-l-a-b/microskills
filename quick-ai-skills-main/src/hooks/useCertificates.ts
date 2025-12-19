@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { certificateService } from "../services/certificateService";
-import {
+import type {
 	Certificate,
 	CertificateGenerationRequest,
 	CertificateGenerationResponse,

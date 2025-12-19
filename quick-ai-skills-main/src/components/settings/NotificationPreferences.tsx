@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/ui/button";
 import {
 	Select,
 	SelectContent,
@@ -13,13 +12,10 @@ import {
 } from "@/components/ui/select";
 import {
 	Bell,
-	Clock,
 	Smartphone,
-	Mail,
 	MessageSquare,
 	Zap,
 	Moon,
-	Sun,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -417,8 +413,14 @@ export const NotificationPreferences = () => {
 						{preferences.quietHours.enabled && (
 							<div className="grid grid-cols-2 gap-4">
 								<div>
-									<label className="text-sm font-medium">Start Time</label>
+									<label
+										htmlFor="quiet-hours-start"
+										className="text-sm font-medium"
+									>
+										Start Time
+									</label>
 									<input
+										id="quiet-hours-start"
 										type="time"
 										value={preferences.quietHours.start}
 										onChange={(e) =>
@@ -428,8 +430,14 @@ export const NotificationPreferences = () => {
 									/>
 								</div>
 								<div>
-									<label className="text-sm font-medium">End Time</label>
+									<label
+										htmlFor="quiet-hours-end"
+										className="text-sm font-medium"
+									>
+										End Time
+									</label>
 									<input
+										id="quiet-hours-end"
 										type="time"
 										value={preferences.quietHours.end}
 										onChange={(e) =>

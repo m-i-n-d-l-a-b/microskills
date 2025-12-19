@@ -288,7 +288,7 @@ export class LLMService {
 
 				// Wait before retrying (exponential backoff)
 				if (attempt < this.config.maxRetries) {
-					const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
+					const delay = Math.min(1000 * 2 ** (attempt - 1), 10000);
 					await new Promise((resolve) => setTimeout(resolve, delay));
 				}
 			}

@@ -1,5 +1,5 @@
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
 	Card,
 	CardContent,
@@ -36,6 +36,7 @@ import {
 	useEncryptionConfig,
 	useSensitiveForm,
 } from "@/hooks/useEncryption";
+import type { EncryptionConfig } from "@/services/encryptionService";
 import { addBreadcrumb } from "@/services/monitoringService";
 
 interface SecurityStats {
@@ -79,17 +80,9 @@ export const SecurityDashboard: React.FC = () => {
 		decryptData,
 	} = useEncryption();
 
-	const {
-		error: storageError,
-		clearSecureData,
-	} = useSecureStorage();
+	const { error: storageError } = useSecureStorage();
 
-	const {
-		isLoading: transmissionLoading,
-		error: transmissionError,
-		transmitSecurely,
-		cancelTransmission,
-	} = useSecureTransmission();
+	const { error: transmissionError } = useSecureTransmission();
 
 	const { config, stats, updateConfig, rotateKeys } = useEncryptionConfig();
 
@@ -98,9 +91,6 @@ export const SecurityDashboard: React.FC = () => {
 		isEncrypted: formEncrypted,
 		isLoading: formLoading,
 		updateField,
-		updateData,
-		encryptFormData,
-		decryptFormData,
 		saveToStorage,
 		clearForm,
 	} = useSensitiveForm(
@@ -113,7 +103,7 @@ export const SecurityDashboard: React.FC = () => {
 		"test_form",
 	);
 
-	const refreshData = async () => {
+	const refreshData = useCallback(async () => {
 		setIsLoading(true);
 		try {
 			// Simulate fetching security stats
@@ -136,16 +126,13 @@ export const SecurityDashboard: React.FC = () => {
 			setSecurityStats(mockStats);
 			setLastRefresh(new Date());
 
-			addBreadcrumb("security_dashboard_refreshed", {
-				category: "security",
-				level: "info",
-			});
+			addBreadcrumb("security_dashboard_refreshed", "security");
 		} catch (error) {
 			console.error("Failed to refresh security data:", error);
 		} finally {
 			setIsLoading(false);
 		}
-	};
+	}, [addBreadcrumb]);
 
 	const handleTestEncryption = async () => {
 		if (!testData.trim()) return;
@@ -155,11 +142,7 @@ export const SecurityDashboard: React.FC = () => {
 			setEncryptedData(JSON.stringify(encrypted, null, 2));
 			setDecryptedData("");
 
-			addBreadcrumb("test_encryption_performed", {
-				category: "security",
-				level: "info",
-				dataLength: testData.length,
-			});
+			addBreadcrumb("test_encryption_performed", "security");
 		} catch (error) {
 			console.error("Test encryption failed:", error);
 		}
@@ -177,10 +160,7 @@ export const SecurityDashboard: React.FC = () => {
 					: JSON.stringify(decrypted, null, 2),
 			);
 
-			addBreadcrumb("test_decryption_performed", {
-				category: "security",
-				level: "info",
-			});
+			addBreadcrumb("test_decryption_performed", "security");
 		} catch (error) {
 			console.error("Test decryption failed:", error);
 		}
@@ -190,10 +170,7 @@ export const SecurityDashboard: React.FC = () => {
 		try {
 			await rotateKeys();
 
-			addBreadcrumb("manual_key_rotation_performed", {
-				category: "security",
-				level: "info",
-			});
+			addBreadcrumb("manual_key_rotation_performed", "security");
 		} catch (error) {
 			console.error("Key rotation failed:", error);
 		}
@@ -203,11 +180,7 @@ export const SecurityDashboard: React.FC = () => {
 		try {
 			updateConfig(updates);
 
-			addBreadcrumb("security_config_updated", {
-				category: "security",
-				level: "info",
-				updates: Object.keys(updates),
-			});
+			addBreadcrumb("security_config_updated", "security");
 		} catch (error) {
 			console.error("Config update failed:", error);
 		}
@@ -218,19 +191,6 @@ export const SecurityDashboard: React.FC = () => {
 		if (encryptionError || storageError || transmissionError) return "error";
 		if (stats.keyCount === 0) return "warning";
 		return "secure";
-	};
-
-	const getStatusColor = (status: string) => {
-		switch (status) {
-			case "secure":
-				return "text-green-600";
-			case "warning":
-				return "text-yellow-600";
-			case "error":
-				return "text-red-600";
-			default:
-				return "text-gray-600";
-		}
 	};
 
 	const getStatusIcon = (status: string) => {
@@ -248,7 +208,7 @@ export const SecurityDashboard: React.FC = () => {
 
 	useEffect(() => {
 		refreshData();
-	}, []);
+	}, [refreshData]);
 
 	if (isLoading && !securityStats) {
 		return (
@@ -729,7 +689,10 @@ export const SecurityDashboard: React.FC = () => {
 										id="algorithm"
 										value={config.algorithm}
 										onChange={(e) =>
-											handleConfigUpdate({ algorithm: e.target.value })
+											handleConfigUpdate({
+												algorithm: e.target
+													.value as EncryptionConfig["algorithm"],
+											})
 										}
 										className="w-full p-2 border rounded-md"
 									>
@@ -744,7 +707,11 @@ export const SecurityDashboard: React.FC = () => {
 										id="key-length"
 										value={config.keyLength}
 										onChange={(e) =>
-											handleConfigUpdate({ keyLength: Number(e.target.value) })
+											handleConfigUpdate({
+												keyLength: Number(
+													e.target.value,
+												) as EncryptionConfig["keyLength"],
+											})
 										}
 										className="w-full p-2 border rounded-md"
 									>

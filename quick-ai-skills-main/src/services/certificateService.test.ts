@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { CertificateService } from "./certificateService";
 import { client } from "../lib/graphql";
 import {
-	CertificateGenerationRequest,
-	BadgeShareRequest,
+	type CertificateGenerationRequest,
+	type BadgeShareRequest,
 	Certificate,
 } from "../types/api";
 

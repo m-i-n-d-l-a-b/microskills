@@ -1,6 +1,10 @@
 import { useState, useCallback, useEffect } from "react";
 import { achievementService } from "@/services/achievementService";
-import { Achievement, AchievementProgress, ApiResponse } from "@/types/api";
+import {
+	type Achievement,
+	AchievementProgress,
+	ApiResponse,
+} from "@/types/api";
 import { useAuth } from "./useAuth";
 import { useToast } from "./use-toast";
 

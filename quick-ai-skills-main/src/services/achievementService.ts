@@ -1,9 +1,9 @@
 import { ApolloClient, gql } from "@apollo/client";
 import { client } from "@/lib/graphql";
 import {
-	Achievement,
-	AchievementProgress,
-	ApiResponse,
+	type Achievement,
+	type AchievementProgress,
+	type ApiResponse,
 	ApiError,
 	UserProgress,
 } from "@/types/api";

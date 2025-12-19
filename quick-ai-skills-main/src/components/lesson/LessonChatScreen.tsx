@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,7 @@ import { ChatBubbleSkeleton } from "@/components/ui/loading-skeleton";
 import { useAnalytics, ANALYTICS_EVENTS } from "@/hooks/useAnalytics";
 import { useLessons } from "@/hooks/useLessons";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-import type { Lesson, QuizSubmission, QuizResult } from "@/types/api";
+import type { Lesson, QuizSubmission } from "@/types/api";
 
 type QuizQuestion = {
 	id: string;
@@ -83,7 +83,7 @@ export const LessonChatScreen = ({
 	const [messages, setMessages] = useState<ChatMessage[]>([]);
 	const [inputValue, setInputValue] = useState("");
 	const [isTyping, setIsTyping] = useState(false);
-	const [lessonProgress, setLessonProgress] = useLocalStorage<LessonProgress>(
+	const [_lessonProgress, setLessonProgress] = useLocalStorage<LessonProgress>(
 		"lesson_progress",
 		{},
 	);
@@ -96,13 +96,9 @@ export const LessonChatScreen = ({
 		isLoading,
 		error,
 		isSubmitting,
-		isStreaming,
-		streamedContent,
 		submitQuiz,
 		switchTone,
 		markLessonComplete,
-		startLessonStream,
-		stopLessonStream,
 		clearError,
 	} = useLessons();
 
@@ -130,13 +126,45 @@ export const LessonChatScreen = ({
 		}
 	}, [currentLesson, messages.length, track]);
 
-	const scrollToBottom = () => {
+	const scrollToBottom = useCallback(() => {
 		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-	};
+	}, []);
 
 	useEffect(() => {
 		scrollToBottom();
-	}, [messages]);
+	}, [messages, scrollToBottom]);
+
+	const generateAIResponse = useCallback(
+		(lesson: Lesson): { content: string; quickReplies?: string[] } => {
+			const sections = lesson.content?.sections ?? [];
+			const sectionIndex = Math.max(
+				0,
+				Math.min(sections.length - 1, stepNumber - 1),
+			);
+			const lessonSection = sections[sectionIndex];
+
+			if (lessonSection) {
+				return {
+					content: `Great question! ${lessonSection.content}`,
+					quickReplies:
+						stepNumber < totalSteps
+							? ["Continue", "Example please", "Got it!"]
+							: undefined,
+				};
+			}
+
+			return {
+				content:
+					lesson.description ||
+					"Let's keep going! Ready for the next part of the lesson?",
+				quickReplies:
+					stepNumber < totalSteps
+						? ["Continue", "Give me an example", "What's next?"]
+						: undefined,
+			};
+		},
+		[stepNumber, totalSteps],
+	);
 
 	const handleSendMessage = async (content: string) => {
 		if (!content.trim() || !currentLesson) return;
@@ -164,73 +192,30 @@ export const LessonChatScreen = ({
 		}));
 
 		try {
-			// Start real-time streaming for AI response
-			const aiMessageId = (Date.now() + 1).toString();
+			const aiResponse = generateAIResponse(currentLesson);
 			const aiMessage: ChatMessage = {
-				id: aiMessageId,
+				id: (Date.now() + 1).toString(),
 				type: "ai",
-				content: "",
+				content: aiResponse.content,
 				timestamp: new Date(),
+				quickReplies:
+					stepNumber < totalSteps ? aiResponse.quickReplies : undefined,
 			};
 
 			setMessages((prev) => [...prev, aiMessage]);
 
-			// Stream the AI response
-			await startLessonStream(currentLesson.id, {
-				onChunk: (chunk) => {
-					setMessages((prev) =>
-						prev.map((msg) =>
-							msg.id === aiMessageId
-								? { ...msg, content: msg.content + chunk }
-								: msg,
-						),
-					);
-				},
-				onComplete: (data) => {
-					// Add quick replies if not the final step
-					setMessages((prev) =>
-						prev.map((msg) =>
-							msg.id === aiMessageId
-								? {
-										...msg,
-										quickReplies:
-											stepNumber < totalSteps
-												? ["Continue", "Example please", "Got it!"]
-												: undefined,
-									}
-								: msg,
-						),
-					);
-
-					// If this is the final step, mark lesson as complete
-					if (stepNumber >= totalSteps) {
-						setTimeout(async () => {
-							try {
-								await markLessonComplete(currentLesson.id);
-								onComplete?.();
-							} catch (error) {
-								console.error("Failed to mark lesson complete:", error);
-							}
-						}, 1000);
+			if (stepNumber >= totalSteps) {
+				setTimeout(async () => {
+					try {
+						await markLessonComplete(currentLesson.id);
+						onComplete?.();
+					} catch (error) {
+						console.error("Failed to mark lesson complete:", error);
 					}
-				},
-				onError: (error) => {
-					console.error("Streaming error:", error);
-					setMessages((prev) =>
-						prev.map((msg) =>
-							msg.id === aiMessageId
-								? {
-										...msg,
-										content:
-											"I apologize, but I'm having trouble processing your request right now. Please try again.",
-									}
-								: msg,
-						),
-					);
-				},
-			});
+				}, 1000);
+			}
 		} catch (error) {
-			console.error("Failed to start lesson stream:", error);
+			console.error("Failed to generate lesson response:", error);
 			const errorMessage: ChatMessage = {
 				id: (Date.now() + 1).toString(),
 				type: "ai",
@@ -242,48 +227,6 @@ export const LessonChatScreen = ({
 		} finally {
 			setIsTyping(false);
 		}
-	};
-
-	// Cleanup streaming on unmount
-	useEffect(() => {
-		return () => {
-			stopLessonStream();
-		};
-	}, [stopLessonStream]);
-
-	const generateAIResponse = async (
-		userInput: string,
-		lesson: Lesson,
-		currentStep: number,
-	): Promise<{ content: string; quickReplies?: string[] }> => {
-		// This would typically call an AI service to generate contextual responses
-		// For now, we'll use the lesson content to generate appropriate responses
-
-		const lessonSection = lesson.content.sections[currentStep - 1];
-		if (lessonSection) {
-			return {
-				content: `Great question! ${lessonSection.content}`,
-				quickReplies:
-					currentStep < lesson.content.sections.length
-						? ["Continue", "Example please", "Got it!"]
-						: undefined,
-			};
-		}
-
-		// Fallback response
-		const responses = [
-			`Great question! Let me break that down for you. ${lesson.description}`,
-			"That's an excellent observation! Here's how we can build on that idea...",
-			"Perfect! You're really getting the hang of this. Let's try something more advanced...",
-		];
-
-		return {
-			content: responses[Math.floor(Math.random() * responses.length)],
-			quickReplies:
-				currentStep < totalSteps
-					? ["Continue", "Example please", "Got it!"]
-					: undefined,
-		};
 	};
 
 	const handleQuickReply = (reply: string) => {
@@ -350,13 +293,18 @@ export const LessonChatScreen = ({
 			setMessages((prev) => [...prev, resultMessage]);
 
 			// Track quiz completion
-			track(ANALYTICS_EVENTS.QUIZ_COMPLETED, {
-				lessonId: currentLesson.id,
-				quizId,
-				score: result.percentage,
-				passed: result.passed,
-				timeSpent,
-			});
+			track(
+				result.passed
+					? ANALYTICS_EVENTS.QUIZ_PASSED
+					: ANALYTICS_EVENTS.QUIZ_FAILED,
+				{
+					lessonId: currentLesson.id,
+					quizId,
+					score: result.percentage,
+					passed: result.passed,
+					timeSpent,
+				},
+			);
 
 			return result;
 		} catch (error) {
@@ -371,22 +319,6 @@ export const LessonChatScreen = ({
 			setMessages((prev) => [...prev, errorMessage]);
 			throw error;
 		}
-	};
-
-	const startQuiz = (quiz: {
-		id: string;
-		questions: QuizQuestion[];
-		passingScore?: number;
-		timeLimit?: number;
-	}) => {
-		const quizMessage: ChatMessage = {
-			id: Date.now().toString(),
-			type: "quiz",
-			content: "Let's test your knowledge! Answer the following questions:",
-			timestamp: new Date(),
-			quiz,
-		};
-		setMessages((prev) => [...prev, quizMessage]);
 	};
 
 	// Show loading state
@@ -445,7 +377,10 @@ export const LessonChatScreen = ({
 									<div className="flex gap-1">
 										{Array.from({ length: totalSteps }, (_, i) => (
 											<div
-												key={i}
+													key={
+														currentLesson?.content.sections?.[i]?.id ??
+														`step-indicator-${i}`
+													}
 												className={`w-2 h-2 rounded-full ${
 													i < stepNumber ? "bg-primary" : "bg-muted"
 												}`}
@@ -544,7 +479,7 @@ export const LessonChatScreen = ({
 																						optionIndex: number,
 																					) => (
 																						<label
-																							key={optionIndex}
+																							key={`option-${question.id}-${optionIndex}`}
 																							className="flex items-center space-x-2 cursor-pointer"
 																						>
 																							<input
@@ -595,7 +530,8 @@ export const LessonChatScreen = ({
 															<Button
 																onClick={() => {
 																	// Collect answers and submit quiz
-																	const answers = message.quiz!.questions.map(
+																	if (!message.quiz) return;
+																	const answers = message.quiz.questions.map(
 																		(question) => {
 																			const input = document.querySelector(
 																				`input[name="question-${question.id}"]:checked`,
@@ -607,7 +543,7 @@ export const LessonChatScreen = ({
 																		},
 																	);
 																	handleQuizSubmission(
-																		message.quiz!.id,
+																		message.quiz.id,
 																		answers,
 																		0,
 																	);
@@ -643,7 +579,10 @@ export const LessonChatScreen = ({
 																<p className="text-sm font-medium">Feedback:</p>
 																{message.quizResult.feedback.map(
 																	(item, index) => (
-																		<div key={index} className="text-sm">
+																		<div
+																			key={`feedback-${message.id}-${index}`}
+																			className="text-sm"
+																		>
 																			<span
 																				className={
 																					item.correct
@@ -668,9 +607,9 @@ export const LessonChatScreen = ({
 
 										{message.quickReplies && message.type === "ai" && (
 											<div className="flex flex-wrap gap-2 mt-2">
-												{message.quickReplies.map((reply, index) => (
+												{message.quickReplies.map((reply) => (
 													<Button
-														key={index}
+														key={`reply-${message.id}-${reply}`}
 														variant="outline"
 														size="sm"
 														className="text-xs transition-smooth hover:bg-primary hover:text-primary-foreground"

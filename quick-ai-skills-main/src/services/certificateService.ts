@@ -1,6 +1,6 @@
 import { client } from "../lib/graphql";
 import { gql } from "@apollo/client";
-import {
+import type {
 	Certificate,
 	CertificateGenerationRequest,
 	CertificateGenerationResponse,

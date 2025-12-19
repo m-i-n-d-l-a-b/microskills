@@ -4,10 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import { LessonChatScreen } from "@/components/lesson/LessonChatScreen";
-import { MiniProjectSandbox } from "@/components/project/MiniProjectSandbox";
-import { AdminAnalytics } from "@/components/admin/AdminAnalytics";
-import { NotificationPreferences } from "@/components/settings/NotificationPreferences";
-import { BadgeShareModal } from "@/components/badges/BadgeShareModal";
 import { StreakCounter } from "@/components/progress/StreakCounter";
 import { XPProgressBar } from "@/components/progress/XPProgressBar";
 import { Leaderboard } from "@/components/leaderboard/Leaderboard";
@@ -15,13 +11,7 @@ import {
 	AchievementToast,
 	useAchievements,
 } from "@/components/achievements/AchievementToast";
-import {
-	ErrorBoundary,
-	RouteErrorBoundary,
-	ComponentErrorBoundary,
-	LessonErrorBoundary,
-	ProjectErrorBoundary,
-} from "@/components/ui/error-boundary";
+import { RouteErrorBoundary, LessonErrorBoundary } from "@/components/ui/error-boundary";
 import { Settings as SettingsPage } from "@/pages/Settings";
 import {
 	Play,
@@ -31,12 +21,9 @@ import {
 	Clock,
 	Sparkles,
 	Settings,
-	Code,
-	BarChart,
 	Users,
 } from "lucide-react";
 import { useAnalytics, ANALYTICS_EVENTS } from "@/hooks/useAnalytics";
-import { useSpacedRepetition } from "@/hooks/useSpacedRepetition";
 import heroImage from "@/assets/hero-learning.jpg";
 
 interface UserData {
@@ -53,7 +40,6 @@ const Index = () => {
 	const [showLeaderboard, setShowLeaderboard] = useState(false);
 	const [userData, setUserData] = useState<UserData | null>(null);
 	const { track } = useAnalytics();
-	const { getRecommendedLessons } = useSpacedRepetition();
 	const { achievements, triggerAchievement, removeAchievement } =
 		useAchievements();
 

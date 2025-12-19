@@ -1,4 +1,3 @@
-import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { LessonChatScreen } from "./LessonChatScreen";
@@ -74,16 +73,22 @@ vi.mock("@/components/ui/avatar", () => ({
 		</div>
 	),
 	AvatarImage: ({ ...props }: any) => (
-		<img {...props} data-testid="avatar-image" />
+		<img {...props} data-testid="avatar-image" alt="" />
 	),
 }));
 
 vi.mock("@/components/lesson/QuickActionToolbar", () => ({
 	QuickActionToolbar: ({ onAction }: any) => (
 		<div data-testid="quick-action-toolbar">
-			<button onClick={() => onAction("hint")}>Hint</button>
-			<button onClick={() => onAction("explain")}>Explain</button>
-			<button onClick={() => onAction("example")}>Example</button>
+			<button type="button" onClick={() => onAction("hint")}>
+				Hint
+			</button>
+			<button type="button" onClick={() => onAction("explain")}>
+				Explain
+			</button>
+			<button type="button" onClick={() => onAction("example")}>
+				Example
+			</button>
 		</div>
 	),
 }));

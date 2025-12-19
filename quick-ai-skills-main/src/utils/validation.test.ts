@@ -12,7 +12,7 @@ import {
 	validateForm,
 	createValidationErrorMessage,
 	validateApiRequest,
-	ValidationError,
+	type ValidationError,
 	ValidationResult,
 	SanitizeOptions,
 } from "./validation";
