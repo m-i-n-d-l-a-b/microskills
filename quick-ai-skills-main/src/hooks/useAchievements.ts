@@ -1,10 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { achievementService } from "@/services/achievementService";
-import {
-	type Achievement,
-	AchievementProgress,
-	ApiResponse,
-} from "@/types/api";
+import type { Achievement } from "@/types/api";
 import { useAuth } from "./useAuth";
 import { useToast } from "./use-toast";
 
@@ -56,15 +52,6 @@ export const useAchievements = (): AchievementState & AchievementActions => {
 	const { user } = useAuth();
 	const { toast } = useToast();
 
-	// Load achievements on mount and when user changes
-	useEffect(() => {
-		if (user?.id) {
-			refreshAchievements();
-			checkEligibility();
-			getStats();
-		}
-	}, [user?.id]);
-
 	const refreshAchievements = useCallback(async () => {
 		if (!user?.id) return;
 
@@ -105,7 +92,7 @@ export const useAchievements = (): AchievementState & AchievementActions => {
 					await achievementService.unlockAchievement(achievementId);
 
 				if (response.success) {
-					const { achievement, xpEarned, message } = response.data;
+					const { achievement, xpEarned } = response.data;
 
 					// Update achievements list
 					setState((prev) => ({
@@ -145,7 +132,7 @@ export const useAchievements = (): AchievementState & AchievementActions => {
 				});
 			}
 		},
-		[user?.id, toast],
+		[user?.id, toast, setState],
 	);
 
 	const updateProgress = useCallback(
@@ -207,7 +194,7 @@ export const useAchievements = (): AchievementState & AchievementActions => {
 		} catch (error) {
 			console.error("Failed to get achievement stats:", error);
 		}
-	}, [user?.id]);
+	}, [user?.id, setState]);
 
 	const trackActivity = useCallback(
 		async (activityType: string, metadata: Record<string, any>) => {
@@ -260,7 +247,7 @@ export const useAchievements = (): AchievementState & AchievementActions => {
 				console.error("Failed to track activity:", error);
 			}
 		},
-		[user?.id, toast, getStats],
+		[user?.id, toast, getStats, setState],
 	);
 
 	const getAchievementCriteria = useCallback(
@@ -281,7 +268,7 @@ export const useAchievements = (): AchievementState & AchievementActions => {
 				return [];
 			}
 		},
-		[],
+		[user?.id],
 	);
 
 	const checkEligibility = useCallback(async () => {

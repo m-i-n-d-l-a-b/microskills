@@ -1,0 +1,10 @@
+
+> vite_react_shadcn_ts@0.0.0 lint
+> biome check .
+
+The number of diagnostics exceeds the limit allowed. Use --max-diagnostics to increase it.
+Diagnostics not shown: 194.
+Checked 183 files in 544ms. No fixes applied.
+Found 52 errors.
+Found 136 warnings.
+Found 26 infos.

@@ -12,7 +12,6 @@ import {
 import { Button } from "./button";
 import { Card } from "./card";
 import { reportError, addBreadcrumb } from "@/services/monitoringService";
-import { useAuth } from "@/hooks/useAuth";
 
 interface Props {
 	children: ReactNode;
@@ -360,7 +359,9 @@ export class AppErrorBoundary extends Component<Props, State> {
 									</Button>
 									<Button
 										variant="outline"
-										onClick={() => (window.location.href = "/")}
+										onClick={() => {
+											window.location.href = "/";
+										}}
 									>
 										Go Home
 									</Button>
@@ -396,7 +397,9 @@ export class RouteErrorBoundary extends Component<Props, State> {
 									<Button onClick={() => window.history.back()}>Go Back</Button>
 									<Button
 										variant="outline"
-										onClick={() => (window.location.href = "/")}
+										onClick={() => {
+											window.location.href = "/";
+										}}
 									>
 										Home
 									</Button>
@@ -462,7 +465,9 @@ export class LessonErrorBoundary extends Component<Props, State> {
 								</Button>
 								<Button
 									variant="outline"
-									onClick={() => (window.location.href = "/")}
+									onClick={() => {
+										window.location.href = "/";
+									}}
 								>
 									Back to Dashboard
 								</Button>
@@ -497,7 +502,9 @@ export class ProjectErrorBoundary extends Component<Props, State> {
 								</Button>
 								<Button
 									variant="outline"
-									onClick={() => (window.location.href = "/")}
+									onClick={() => {
+										window.location.href = "/";
+									}}
 								>
 									Back to Dashboard
 								</Button>
@@ -531,7 +538,9 @@ export class AuthErrorBoundary extends Component<Props, State> {
 								</Button>
 								<Button
 									variant="outline"
-									onClick={() => (window.location.href = "/auth")}
+									onClick={() => {
+										window.location.href = "/auth";
+									}}
 								>
 									Login
 								</Button>
@@ -568,7 +577,7 @@ export function useErrorBoundary(
 
 	const ErrorFallback =
 		fallback ||
-		(({ error, resetError }) => (
+		(({ resetError }) => (
 			<Card className="p-4 border-destructive/20 bg-destructive/5">
 				<div className="flex items-center gap-2 text-sm text-muted-foreground">
 					<AlertTriangle className="h-4 w-4" />
@@ -616,7 +625,7 @@ export function useErrorBoundary(
 }
 
 // Error Boundary Provider for Context-based Error Handling
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext } from "react";
 
 interface ErrorBoundaryContextType {
 	reportError: (error: Error, errorInfo: ErrorInfo) => void;
@@ -732,7 +741,7 @@ export const ErrorRecoveryUtils = {
 	},
 
 	// Check if error should be reported
-	shouldReportError: (error: Error, context?: string): boolean => {
+	shouldReportError: (error: Error, _context?: string): boolean => {
 		// Don't report expected errors
 		const expectedErrors = [
 			"User cancelled",

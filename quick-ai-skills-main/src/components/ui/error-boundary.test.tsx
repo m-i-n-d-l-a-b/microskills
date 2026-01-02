@@ -1,4 +1,3 @@
-import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
@@ -14,7 +13,7 @@ import {
 	useErrorBoundaryContext,
 	ErrorRecoveryUtils,
 } from "./error-boundary";
-import { reportError, addBreadcrumb } from "@/services/monitoringService";
+import { reportError } from "@/services/monitoringService";
 
 // Mock monitoring service
 vi.mock("@/services/monitoringService", () => ({
@@ -39,7 +38,7 @@ const ThrowError = ({ shouldThrow = false }: { shouldThrow?: boolean }) => {
 };
 
 // Component that throws a promise rejection
-const ThrowPromiseRejection = ({
+const _ThrowPromiseRejection = ({
 	shouldThrow = false,
 }: {
 	shouldThrow?: boolean;
@@ -328,6 +327,7 @@ describe("ErrorBoundary", () => {
 					<span>Has errors: {hasErrors.toString()}</span>
 					<span>Error count: {errorCount}</span>
 					<button
+						type="button"
 						onClick={() =>
 							reportError(new Error("Test"), { componentStack: "test" } as any)
 						}

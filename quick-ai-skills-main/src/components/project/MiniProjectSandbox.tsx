@@ -23,12 +23,11 @@ import {
 	type QueueItem,
 	type QueueStats,
 } from "@/services/projectQueueService";
-import {
-	llmService,
-	type CodeEvaluationResponse,
-	type CodeFeedback,
+import type {
+	CodeEvaluationResponse,
+	CodeFeedback,
 } from "@/services/llmService";
-import type { ProjectSubmission, ProjectResult } from "@/types/api";
+import type { ProjectSubmission } from "@/types/api";
 
 interface MiniProjectSandboxProps {
 	projectId: string;
@@ -122,13 +121,9 @@ export const MiniProjectSandbox = ({
 	const {
 		submitProject,
 		getProjectStatus,
-		getProjectHistory,
 		resubmitProject,
-		evaluateCode,
 		downloadProjectFiles,
 		isSubmitting,
-		isCheckingStatus: isCheckingProjectStatus,
-		error: projectError,
 		clearError,
 	} = useProjects();
 
@@ -431,9 +426,9 @@ export const MiniProjectSandbox = ({
 	};
 
 	const renderFeedback = (feedback: CodeFeedback[]) => {
-		return feedback.map((item, index) => (
+		return feedback.map((item) => (
 			<div
-				key={index}
+				key={`feedback-${item.message}-${item.category}-${item.lineNumber || "no-line"}`}
 				className={`p-3 rounded-lg border-l-4 ${
 					item.type === "success"
 						? "border-green-500 bg-green-50"
@@ -648,7 +643,9 @@ export const MiniProjectSandbox = ({
 											<h4 className="text-sm font-medium">Requirements:</h4>
 											<ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
 												{requirements.length > 0 ? (
-													requirements.map((req, i) => <li key={i}>{req}</li>)
+													requirements.map((req) => (
+														<li key={`requirement-${req}`}>{req}</li>
+													))
 												) : (
 													<>
 														<li>Include context parameter</li>
@@ -785,8 +782,10 @@ export const MiniProjectSandbox = ({
 																			</h4>
 																			<ul className="text-xs text-muted-foreground space-y-1">
 																				{evaluationResult.analysis.strengths.map(
-																					(strength, i) => (
-																						<li key={i}>• {strength}</li>
+																					(strength) => (
+																						<li key={`strength-${strength}`}>
+																							• {strength}
+																						</li>
 																					),
 																				)}
 																			</ul>
@@ -800,8 +799,10 @@ export const MiniProjectSandbox = ({
 																			</h4>
 																			<ul className="text-xs text-muted-foreground space-y-1">
 																				{evaluationResult.analysis.weaknesses.map(
-																					(weakness, i) => (
-																						<li key={i}>• {weakness}</li>
+																					(weakness) => (
+																						<li key={`weakness-${weakness}`}>
+																							• {weakness}
+																						</li>
 																					),
 																				)}
 																			</ul>
@@ -815,8 +816,12 @@ export const MiniProjectSandbox = ({
 																			</h4>
 																			<ul className="text-xs text-muted-foreground space-y-1">
 																				{evaluationResult.analysis.suggestions.map(
-																					(suggestion, i) => (
-																						<li key={i}>• {suggestion}</li>
+																					(suggestion) => (
+																						<li
+																							key={`suggestion-${suggestion}`}
+																						>
+																							• {suggestion}
+																						</li>
 																					),
 																				)}
 																			</ul>

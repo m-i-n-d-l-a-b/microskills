@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { InterceptorManager, interceptorManager } from "./interceptors";
+import { InterceptorManager } from "./interceptors";
 import type {
 	RequestInterceptor,
 	ResponseInterceptor,
@@ -18,7 +18,7 @@ Object.defineProperty(window, "performance", {
 });
 
 // Mock console methods
-const consoleSpy = {
+const _consoleSpy = {
 	debug: vi.spyOn(console, "debug").mockImplementation(() => {}),
 	info: vi.spyOn(console, "info").mockImplementation(() => {}),
 	warn: vi.spyOn(console, "warn").mockImplementation(() => {}),
@@ -237,8 +237,8 @@ describe("InterceptorManager", () => {
 
 		it("should include user and session information when available", () => {
 			// Mock authManager to return user data
-			const mockUser = { id: "user-123" };
-			const mockSessionData = { lastActivity: new Date().toISOString() };
+			const _mockUser = { id: "user-123" };
+			const _mockSessionData = { lastActivity: new Date().toISOString() };
 
 			// We can't easily mock the authManager in this test, so we'll test the structure
 			const config = interceptorManagerInstance.createRequestConfig(
@@ -311,7 +311,7 @@ describe("InterceptorManager", () => {
 					error,
 					config,
 				);
-			} catch (e) {
+			} catch (_e) {
 				// Expected to throw
 			}
 
@@ -472,7 +472,7 @@ describe("InterceptorManager", () => {
 					},
 					config,
 				);
-			} catch (e) {
+			} catch (_e) {
 				// Expected to throw
 			}
 
@@ -504,7 +504,7 @@ describe("InterceptorManager", () => {
 					},
 					config,
 				);
-			} catch (e) {
+			} catch (_e) {
 				// Expected to throw
 			}
 

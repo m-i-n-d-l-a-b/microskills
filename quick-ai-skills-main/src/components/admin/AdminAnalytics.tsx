@@ -245,7 +245,10 @@ export const AdminAnalytics = () => {
 	}, []);
 
 	const processAnalyticsEvents = useCallback(
-		(events: AnalyticsEvent[], timeRange: string): Omit<AnalyticsData, "notificationStats"> => {
+		(
+			events: AnalyticsEvent[],
+			timeRange: string,
+		): Omit<AnalyticsData, "notificationStats"> => {
 			const now = new Date();
 			const timeRangeMs = getTimeRangeMs(timeRange);
 			const filteredEvents = events.filter((event) => {

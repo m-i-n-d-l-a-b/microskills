@@ -1,4 +1,4 @@
-import { ERROR_MESSAGES, STORAGE_KEYS } from "@/lib/constants";
+import { ERROR_MESSAGES } from "@/lib/constants";
 import type { ApiError } from "@/types/api";
 
 // Error severity levels
@@ -314,13 +314,13 @@ export class ErrorHandler {
 
 		try {
 			const contentType = response.headers.get("content-type");
-			if (contentType && contentType.includes("application/json")) {
+			if (contentType?.includes("application/json")) {
 				errorData = await response.json();
 			} else {
 				const textData = await response.text();
 				errorData = { message: textData };
 			}
-		} catch (e) {
+		} catch (_e) {
 			errorData = { message: "Failed to parse error response" };
 		}
 

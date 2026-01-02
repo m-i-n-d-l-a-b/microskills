@@ -397,7 +397,7 @@ class InterceptorManager {
 
 		// Create a case-insensitive map of headers
 		const headerMap = new Map<string, string>();
-		Object.entries(sanitized).forEach(([key, value]) => {
+		Object.entries(sanitized).forEach(([key, _value]) => {
 			headerMap.set(key.toLowerCase(), key);
 		});
 

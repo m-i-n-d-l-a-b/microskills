@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -10,13 +10,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import {
-	Bell,
-	Smartphone,
-	MessageSquare,
-	Zap,
-	Moon,
-} from "lucide-react";
+import { Bell, Smartphone, MessageSquare, Zap, Moon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNotifications } from "@/hooks/useNotifications";
 import type { NotificationPreferences as NotificationPrefs } from "@/services/notificationService";
@@ -37,14 +31,7 @@ export const NotificationPreferences = () => {
 	const [isLoading, setIsLoading] = useState(false);
 	const { toast } = useToast();
 
-	// Load preferences on mount
-	useEffect(() => {
-		if (isInitialized) {
-			loadPreferences();
-		}
-	}, [isInitialized]);
-
-	const loadPreferences = async () => {
+	const loadPreferences = useCallback(async () => {
 		try {
 			const prefs = await getPreferences();
 			setPreferences(prefs);
@@ -56,7 +43,14 @@ export const NotificationPreferences = () => {
 				variant: "destructive",
 			});
 		}
-	};
+	}, [getPreferences, toast]);
+
+	// Load preferences on mount
+	useEffect(() => {
+		if (isInitialized) {
+			loadPreferences();
+		}
+	}, [isInitialized, loadPreferences]);
 
 	const handleToggle = async (
 		key: keyof NotificationPrefs["types"] | keyof NotificationPrefs["channels"],
@@ -161,7 +155,7 @@ export const NotificationPreferences = () => {
 				title: "Preferences saved!",
 				description: "Your notification settings have been updated.",
 			});
-		} catch (error) {
+		} catch (_error) {
 			toast({
 				title: "Error saving preferences",
 				description: "Please try again later.",
@@ -188,7 +182,7 @@ export const NotificationPreferences = () => {
 					variant: "destructive",
 				});
 			}
-		} catch (error) {
+		} catch (_error) {
 			toast({
 				title: "Error requesting permission",
 				description: "Please try again.",

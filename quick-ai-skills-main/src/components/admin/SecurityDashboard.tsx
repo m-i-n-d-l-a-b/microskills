@@ -132,7 +132,7 @@ export const SecurityDashboard: React.FC = () => {
 		} finally {
 			setIsLoading(false);
 		}
-	}, [addBreadcrumb]);
+	}, []);
 
 	const handleTestEncryption = async () => {
 		if (!testData.trim()) return;

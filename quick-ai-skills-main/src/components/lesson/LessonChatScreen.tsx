@@ -132,7 +132,7 @@ export const LessonChatScreen = ({
 
 	useEffect(() => {
 		scrollToBottom();
-	}, [messages, scrollToBottom]);
+	}, [scrollToBottom]);
 
 	const generateAIResponse = useCallback(
 		(lesson: Lesson): { content: string; quickReplies?: string[] } => {
@@ -377,10 +377,10 @@ export const LessonChatScreen = ({
 									<div className="flex gap-1">
 										{Array.from({ length: totalSteps }, (_, i) => (
 											<div
-													key={
-														currentLesson?.content.sections?.[i]?.id ??
-														`step-indicator-${i}`
-													}
+												key={
+													currentLesson?.content.sections?.[i]?.id ??
+													`step-indicator-${i}`
+												}
 												className={`w-2 h-2 rounded-full ${
 													i < stepNumber ? "bg-primary" : "bg-muted"
 												}`}

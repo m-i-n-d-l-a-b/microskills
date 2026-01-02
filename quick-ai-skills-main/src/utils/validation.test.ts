@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
 	sanitizeInput,
 	validateEmail,
@@ -13,8 +13,6 @@ import {
 	createValidationErrorMessage,
 	validateApiRequest,
 	type ValidationError,
-	ValidationResult,
-	SanitizeOptions,
 } from "./validation";
 import { VALIDATION_RULES } from "../lib/constants";
 
